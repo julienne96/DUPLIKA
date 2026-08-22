@@ -1,0 +1,26 @@
+# Node / React
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Laravel
+vendor/
+**/vendor/
+
+# Fichiers d'environnement
+.env
+**/.env
+.env.local
+**/.env.local
+
+# Cursor
+.cursor/
+**/.cursor/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+.DS_Store

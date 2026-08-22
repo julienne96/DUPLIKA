@@ -1,0 +1,15 @@
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+vendor/
+**/vendor/
+.env
+**/.env
+.env.local
+**/.env.local
+.cursor/
+**/.cursor/
+*.log
+Thumbs.db
+.DS_Store

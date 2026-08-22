@@ -1,0 +1,537 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+
+/* =========================================================
+   DUPLIKA ADMIN
+   Bleu nuit + or
+   ========================================================= */
+
+:root {
+    --duplika-navy: #071a2f;
+    --duplika-navy-light: #0d2845;
+    --duplika-navy-dark: #080b10;
+
+    --duplika-gold: #e7ad25;
+    --duplika-gold-hover: #f0bd43;
+
+    --duplika-text: #f8fafc;
+    --duplika-muted: #b8c2cf;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.fi-sidebar {
+    background: var(--duplika-navy) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.fi-sidebar-header {
+    background: var(--duplika-navy) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+
+/* Tous les labels du menu */
+.fi-sidebar-item-label,
+.fi-sidebar .fi-sidebar-item-label {
+    color: #e2e8f0 !important;
+}
+
+
+/* Tous les liens du menu */
+.fi-sidebar-item-button,
+.fi-sidebar a {
+    color: #e2e8f0 !important;
+}
+
+
+/* Icônes */
+.fi-sidebar-item-icon,
+.fi-sidebar .fi-sidebar-item-icon {
+    color: #94a3b8 !important;
+}
+
+
+/* Survol */
+.fi-sidebar-item-button:hover {
+    background: rgba(255, 255, 255, 0.07) !important;
+}
+
+
+/* Texte au survol */
+.fi-sidebar-item-button:hover .fi-sidebar-item-label {
+    color: white !important;
+}
+
+
+/* Icône au survol */
+.fi-sidebar-item-button:hover .fi-sidebar-item-icon {
+    color: var(--duplika-gold) !important;
+}
+
+
+/* Élément actif */
+.fi-sidebar-item.fi-active .fi-sidebar-item-button,
+.fi-sidebar-item-button[aria-current="page"] {
+    background: rgba(231, 173, 37, 0.15) !important;
+    box-shadow: inset 3px 0 0 var(--duplika-gold);
+}
+
+
+/* Texte actif */
+.fi-sidebar-item.fi-active .fi-sidebar-item-label,
+.fi-sidebar-item-button[aria-current="page"] .fi-sidebar-item-label {
+    color: var(--duplika-gold) !important;
+    font-weight: 700 !important;
+}
+
+
+/* Icône active */
+.fi-sidebar-item.fi-active .fi-sidebar-item-icon,
+.fi-sidebar-item-button[aria-current="page"] .fi-sidebar-item-icon {
+    color: var(--duplika-gold) !important;
+}
+
+
+/* Badge Newsletter / Messages */
+.fi-sidebar .fi-badge {
+    color: var(--duplika-gold) !important;
+    background: rgba(231, 173, 37, 0.13) !important;
+    border: 1px solid rgba(231, 173, 37, 0.30) !important;
+}
+
+
+/* =========================================================
+   TITRES DES PAGES
+   Catégories, Comptabilité, Produits, etc.
+   ========================================================= */
+
+.fi-header-heading {
+    color: var(--duplika-gold) !important;
+    font-weight: 700 !important;
+}
+
+
+/* Breadcrumbs */
+.fi-breadcrumbs-item-label {
+    color: #64748b !important;
+}
+
+
+/* =========================================================
+   PAGE CATÉGORIES
+   ========================================================= */
+
+.duplika-categories .category-card {
+    background: #111827 !important;
+    border-color: #263244 !important;
+}
+
+.duplika-categories .category-name {
+    color: #ffffff !important;
+}
+
+.duplika-categories .category-description {
+    color: #b8c2cf !important;
+}
+
+.duplika-categories .category-status {
+    color: #cbd5e1 !important;
+}
+
+.duplika-categories .category-count {
+    color: var(--duplika-gold) !important;
+    background: rgba(231, 173, 37, 0.12) !important;
+}
+
+.duplika-categories .category-edit {
+    color: var(--duplika-gold) !important;
+}
+
+.duplika-categories .empty-title {
+    color: white !important;
+}
+
+.duplika-categories .empty-text {
+    color: #b8c2cf !important;
+}
+
+
+/* =========================================================
+   PAGE COMPTABILITÉ
+   ========================================================= */
+
+.duplika-accounting .accounting-card {
+    background: #111827 !important;
+    border-color: #263244 !important;
+}
+
+.duplika-accounting .accounting-eyebrow,
+.duplika-accounting .stat-label {
+    color: var(--duplika-gold) !important;
+}
+
+.duplika-accounting .period-value,
+.duplika-accounting .stat-number,
+.duplika-accounting .bottom-title,
+.duplika-accounting .daily-date,
+.duplika-accounting .daily-total {
+    color: #ffffff !important;
+}
+
+.duplika-accounting .stat-description,
+.duplika-accounting .daily-orders,
+.duplika-accounting .day-count,
+.duplika-accounting .payment-note {
+    color: #b8c2cf !important;
+}
+
+.duplika-accounting .date-field label {
+    color: #cbd5e1 !important;
+}
+
+.duplika-accounting .date-field input {
+    color: white !important;
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+.duplika-accounting .accounting-button {
+    color: white !important;
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+.duplika-accounting .accounting-button:hover {
+    background: #26364c !important;
+    border-color: var(--duplika-gold) !important;
+}
+
+.duplika-accounting .stat-icon {
+    color: var(--duplika-gold) !important;
+    background: rgba(231, 173, 37, 0.12) !important;
+}
+
+
+/* =========================================================
+   TABLEAUX FILAMENT
+   ========================================================= */
+
+.fi-ta-header-cell-label {
+    font-weight: 700 !important;
+}
+
+.dark .fi-ta-header-cell-label {
+    color: #e2e8f0 !important;
+}
+
+
+/* =========================================================
+   MODE SOMBRE
+   ========================================================= */
+
+.dark .fi-sidebar,
+.dark .fi-sidebar-header {
+    background: var(--duplika-navy-dark) !important;
+}
+
+
+/* =========================================================
+   MODE CLAIR
+   La sidebar reste bleu nuit pour garder l'identité DUPLIKA
+   ========================================================= */
+
+html:not(.dark) .fi-sidebar,
+html:not(.dark) .fi-sidebar-header {
+    background: var(--duplika-navy) !important;
+}
+
+html:not(.dark) .fi-sidebar-item-label {
+    color: #e2e8f0 !important;
+}
+
+html:not(.dark) .fi-sidebar-item-icon {
+    color: #94a3b8 !important;
+}
+
+
+/* =========================================================
+   TRANSITIONS
+   ========================================================= */
+
+.fi-sidebar,
+.fi-sidebar-header,
+.fi-sidebar-item-button,
+.fi-sidebar-item-label,
+.fi-sidebar-item-icon {
+    transition:
+        background-color .2s ease,
+        color .2s ease,
+        border-color .2s ease;
+}
+
+/* =========================================================
+   FOND GÉNÉRAL DES PAGES DUPLIKA
+   ========================================================= */
+
+/* MODE CLAIR :
+   arrière-plan général blanc */
+html:not(.dark) body,
+html:not(.dark) .fi-body,
+html:not(.dark) .fi-main,
+html:not(.dark) .fi-main-ctn,
+html:not(.dark) .fi-page {
+    background: #ffffff !important;
+}
+
+/* Le contenu principal reste blanc */
+html:not(.dark) .fi-layout,
+html:not(.dark) .fi-main-ctn {
+    background-color: #ffffff !important;
+}
+
+
+/* MODE SOMBRE :
+   arrière-plan général foncé */
+.dark body,
+.dark .fi-body,
+.dark .fi-main,
+.dark .fi-main-ctn,
+.dark .fi-page {
+    background: #080b10 !important;
+}
+
+
+/* =========================================================
+   LES CARTES RESTENT BLEU NUIT
+   ========================================================= */
+
+.duplika-accounting .accounting-card {
+    background: #0d1b2d !important;
+    border-color: #233247 !important;
+}
+
+.duplika-categories .category-card {
+    background: #0d1b2d !important;
+    border-color: #233247 !important;
+}
+
+/* Partie image des catégories */
+.duplika-categories .category-image-wrap {
+    background: #27272a !important;
+}
+
+
+/* =========================================================
+   TEXTES À L'INTÉRIEUR DES CARTES
+   ========================================================= */
+
+.duplika-accounting .period-value,
+.duplika-accounting .stat-number,
+.duplika-accounting .bottom-title,
+.duplika-accounting .daily-date,
+.duplika-accounting .daily-total,
+.duplika-categories .category-name {
+    color: #ffffff !important;
+}
+
+/* Textes secondaires */
+.duplika-accounting .stat-description,
+.duplika-accounting .daily-orders,
+.duplika-categories .category-description,
+.duplika-categories .category-status {
+    color: #cbd5e1 !important;
+}
+
+/* =========================================================
+   FOND GÉNÉRAL DES PAGES FILAMENT
+   ========================================================= */
+
+/* MODE CLAIR : fond blanc autour des cartes */
+html:not(.dark) .fi-page-main,
+html:not(.dark) .fi-page-content {
+    background-color: #ffffff !important;
+}
+
+/* On garde aussi la zone principale en blanc */
+html:not(.dark) .fi-main,
+html:not(.dark) .fi-main-ctn {
+    background-color: #ffffff !important;
+}
+
+/* MODE SOMBRE */
+.dark .fi-page-main,
+.dark .fi-page-content,
+.dark .fi-main,
+.dark .fi-main-ctn {
+    background-color: #080b10 !important;
+}
+
+/* =========================================================
+   DUPLIKA - CARTES CLAIRES / SOMBRES
+   Ces règles doivent rester TOUT À LA FIN du fichier.
+   ========================================================= */
+
+
+/* ========================================
+   MODE CLAIR
+   ======================================== */
+
+/* Cartes Catégories */
+html:not(.dark) .duplika-categories .category-card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Zone image */
+html:not(.dark) .duplika-categories .category-image-wrap {
+    background: #f3f4f6 !important;
+}
+
+/* Nom catégorie */
+html:not(.dark) .duplika-categories .category-name {
+    color: #0f172a !important;
+}
+
+/* Description */
+html:not(.dark) .duplika-categories .category-description {
+    color: #64748b !important;
+}
+
+/* Statut */
+html:not(.dark) .duplika-categories .category-status {
+    color: #475569 !important;
+}
+
+/* Séparation */
+html:not(.dark) .duplika-categories .category-footer {
+    border-color: #e5e7eb !important;
+}
+
+/* Badge nombre de produits */
+html:not(.dark) .duplika-categories .category-count {
+    color: #b77900 !important;
+    background: #fff7df !important;
+}
+
+/* Modifier */
+html:not(.dark) .duplika-categories .category-edit {
+    color: #b77900 !important;
+}
+
+
+/* ========================================
+   COMPTABILITÉ - MODE CLAIR
+   ======================================== */
+
+html:not(.dark) .duplika-accounting .accounting-card {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Titres dorés */
+html:not(.dark) .duplika-accounting .accounting-eyebrow,
+html:not(.dark) .duplika-accounting .stat-label {
+    color: #b77900 !important;
+}
+
+/* Valeurs principales */
+html:not(.dark) .duplika-accounting .period-value,
+html:not(.dark) .duplika-accounting .stat-number,
+html:not(.dark) .duplika-accounting .bottom-title,
+html:not(.dark) .duplika-accounting .daily-date,
+html:not(.dark) .duplika-accounting .daily-total {
+    color: #0f172a !important;
+}
+
+/* Textes secondaires */
+html:not(.dark) .duplika-accounting .stat-description,
+html:not(.dark) .duplika-accounting .daily-orders,
+html:not(.dark) .duplika-accounting .day-count,
+html:not(.dark) .duplika-accounting .payment-note {
+    color: #64748b !important;
+}
+
+/* Labels Du / Au */
+html:not(.dark) .duplika-accounting .date-field label {
+    color: #475569 !important;
+}
+
+/* Champs date */
+html:not(.dark) .duplika-accounting .date-field input {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #d1d5db !important;
+    color-scheme: light !important;
+}
+
+/* Boutons */
+html:not(.dark) .duplika-accounting .accounting-button {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #d1d5db !important;
+}
+
+html:not(.dark) .duplika-accounting .accounting-button:hover {
+    background: #fff8e7 !important;
+    border-color: #e7ad25 !important;
+}
+
+/* Blocs vides */
+html:not(.dark) .duplika-accounting .accounting-empty {
+    background: #f8fafc !important;
+    color: #64748b !important;
+}
+
+/* Séparation des lignes */
+html:not(.dark) .duplika-accounting .daily-row {
+    border-color: #e5e7eb !important;
+}
+
+
+/* ========================================
+   MODE SOMBRE
+   ======================================== */
+
+.dark .duplika-categories .category-card,
+.dark .duplika-accounting .accounting-card {
+    background: #0d1b2d !important;
+    border-color: #233247 !important;
+}
+
+/* Catégories */
+.dark .duplika-categories .category-name {
+    color: #ffffff !important;
+}
+
+.dark .duplika-categories .category-description,
+.dark .duplika-categories .category-status {
+    color: #cbd5e1 !important;
+}
+
+.dark .duplika-categories .category-image-wrap {
+    background: #27272a !important;
+}
+
+/* Comptabilité */
+.dark .duplika-accounting .period-value,
+.dark .duplika-accounting .stat-number,
+.dark .duplika-accounting .bottom-title,
+.dark .duplika-accounting .daily-date,
+.dark .duplika-accounting .daily-total {
+    color: #ffffff !important;
+}
+
+.dark .duplika-accounting .stat-description,
+.dark .duplika-accounting .daily-orders,
+.dark .duplika-accounting .day-count {
+    color: #cbd5e1 !important;
+}

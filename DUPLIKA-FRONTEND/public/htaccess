@@ -1,0 +1,8 @@
+# Déploiement OVHcloud Starter — mode SPA statique TanStack Start.
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^ /_shell.html [L]
