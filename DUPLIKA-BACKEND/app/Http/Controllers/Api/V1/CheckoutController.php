@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\CinetPayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +14,18 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
-    public function store(Request $request): JsonResponse
-    {
+    public function store(
+        Request $request,
+        CinetPayService $cinetPay
+    ): JsonResponse {
+        try {
+            $cinetPay->assertConfigured();
+        } catch (\RuntimeException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 503);
+        }
+
         $validated = $request->validate([
             'customer' => ['required', 'array'],
             'customer.firstName' => ['required', 'string', 'max:120'],
@@ -33,7 +44,7 @@ class CheckoutController extends Controller
 
             'paymentMethod' => [
                 'required',
-                'in:tmoney,flooz',
+                'in:cinetpay',
             ],
 
             'lines' => ['required', 'array', 'min:1'],
@@ -51,7 +62,7 @@ class CheckoutController extends Controller
          */
         $user = $request->user();
 
-        $order = DB::transaction(function () use ($validated, $user) {
+        $order = DB::transaction(function () use ($validated, $user, $cinetPay) {
 
             $subtotal = 0;
             $preparedItems = [];
@@ -122,8 +133,21 @@ class CheckoutController extends Controller
             $discount = 0;
             $total = $subtotal;
 
+            try {
+                $cinetPay->assertSupportedAmount($total);
+            } catch (\UnexpectedValueException $exception) {
+                throw ValidationException::withMessages([
+                    'lines' => [
+                        $exception->getMessage(),
+                    ],
+                ]);
+            }
+
             $reference =
                 $this->generateReference();
+
+            $paymentTransactionId =
+                $this->generatePaymentTransactionId();
 
             /*
              * Création de la commande.
@@ -190,6 +214,15 @@ class CheckoutController extends Controller
                  */
                 'payment_method' =>
                     $validated['paymentMethod'],
+
+                'payment_provider' =>
+                    'cinetpay',
+
+                'payment_transaction_id' =>
+                    $paymentTransactionId,
+
+                'payment_status' =>
+                    'PENDING',
             ]);
 
             /*
@@ -259,12 +292,9 @@ class CheckoutController extends Controller
                 'paymentMethod' =>
                     $order->payment_method,
 
-                /*
-                 * Cette URL sera renseignée
-                 * lors de l'intégration réelle
-                 * de T-Money / Flooz.
-                 */
                 'paymentRedirectUrl' => null,
+                'cinetpay' =>
+                    $cinetPay->checkoutData($order),
             ],
         ], 201);
     }
@@ -287,5 +317,23 @@ class CheckoutController extends Controller
         );
 
         return $reference;
+    }
+
+    private function generatePaymentTransactionId(): string
+    {
+        do {
+            // Identifiant alphanumérique : aucun caractère spécial refusé par CinetPay.
+            $transactionId =
+                'DPK' .
+                now()->format('ymdHis') .
+                Str::upper(Str::random(8));
+        } while (
+            Order::where(
+                'payment_transaction_id',
+                $transactionId
+            )->exists()
+        );
+
+        return $transactionId;
     }
 }

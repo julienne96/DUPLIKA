@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
 use App\Http\Controllers\Api\V1\NewsletterController;
+use App\Http\Controllers\Api\V1\CinetPayController;
 
 Route::prefix('v1')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index']);
@@ -33,6 +34,10 @@ Route::prefix('v1')->group(function () {
     NewsletterController::class,
     'subscribe'
 ]);
+    Route::match(['get', 'post'], '/payments/cinetpay/notify', [
+        CinetPayController::class,
+        'notify',
+    ])->name('cinetpay.notify');
 
     // Routes publiques
     Route::post('/register', [AuthController::class, 'register']);
@@ -48,6 +53,10 @@ Route::prefix('v1')->group(function () {
         Route::delete('/me/addresses/{id}', [AddressController::class, 'destroy']);
         Route::get('/me/orders', [OrderController::class, 'myOrders']);
         Route::put('/me/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/payments/cinetpay/{order:reference}/sync', [
+            CinetPayController::class,
+            'synchronize',
+        ]);
 
     });
 

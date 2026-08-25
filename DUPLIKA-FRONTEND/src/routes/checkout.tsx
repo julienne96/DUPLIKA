@@ -4,7 +4,7 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   MapPin,
   MessageCircle,
@@ -24,7 +24,13 @@ import {
 import {
   quoteCart,
   submitCheckout,
+  syncCinetPayPayment,
+  type CheckoutResult,
 } from "@/lib/api";
+import {
+  loadCinetPaySdk,
+  openCinetPayPopup,
+} from "@/lib/cinetpay";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { toast } from "sonner";
@@ -47,9 +53,7 @@ export const Route = createFileRoute("/checkout")({
 
 type DeliveryMode = "pickup" | "delivery";
 
-type PaymentMethod =
-  | "tmoney"
-  | "flooz";
+type PaymentMethod = "cinetpay";
 
 function CheckoutPage() {
   const cart = useCart();
@@ -59,7 +63,10 @@ function CheckoutPage() {
     useState<DeliveryMode>("pickup");
 
   const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("tmoney");
+    useState<PaymentMethod>("cinetpay");
+
+  const [pendingCheckout, setPendingCheckout] =
+    useState<CheckoutResult | null>(null);
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -80,6 +87,12 @@ function CheckoutPage() {
       cart.hydrated &&
       cart.lines.length > 0,
   });
+
+  useEffect(() => {
+    void loadCinetPaySdk().catch(() => {
+      // Une erreur explicite sera affichée au clic si le CDN reste indisponible.
+    });
+  }, []);
 
   if (
     cart.hydrated &&
@@ -119,7 +132,8 @@ function CheckoutPage() {
 
     try {
       const result =
-        await submitCheckout({
+        pendingCheckout ??
+        (await submitCheckout({
           customer: {
             firstName: String(
               form.get("firstName") ?? "",
@@ -186,39 +200,57 @@ function CheckoutPage() {
           // Le checkout est désormais réservé
           // aux clients authentifiés.
           createAccount: false,
-        });
+        }));
 
-      /*
-       * Le panier ne sera conservé
-       * que jusqu'à la création correcte
-       * de la commande.
-       */
-      cart.clear();
+      setPendingCheckout(result);
 
-      /*
-       * Lorsque T-Money / Flooz renverra
-       * une URL de paiement, le client
-       * sera automatiquement redirigé.
-       */
+      const popupResult =
+        await openCinetPayPopup(result.cinetpay);
+
+      const popupStatus =
+        popupResult.status?.toUpperCase();
+
       if (
-        result.paymentRedirectUrl
+        popupStatus === "ACCEPTED" ||
+        popupStatus === "REFUSED"
       ) {
-        window.location.href =
-          result.paymentRedirectUrl;
+        const synchronized =
+          await syncCinetPayPayment(
+            result.reference,
+          );
 
-        return;
+        if (
+          popupStatus === "ACCEPTED" &&
+          synchronized.status === "payee"
+        ) {
+          cart.clear();
+          setPendingCheckout(null);
+
+          navigate({
+            to: "/suivi",
+            search: {
+              ref: result.reference,
+            },
+          });
+
+          toast.success(
+            `Paiement confirmé pour la commande ${result.reference}.`,
+          );
+
+          return;
+        }
+
+        if (popupStatus === "REFUSED") {
+          setPendingCheckout(null);
+          setError(
+            "Le paiement a été refusé. Vous pouvez réessayer avec une nouvelle transaction.",
+          );
+          return;
+        }
       }
 
-      navigate({
-        to: "/suivi",
-
-        search: {
-          ref: result.reference,
-        },
-      });
-
-      toast.success(
-        `Commande ${result.reference} enregistrée.`,
+      setError(
+        `Le paiement de la commande ${result.reference} n'est pas encore confirmé. Cliquez de nouveau pour rouvrir le guichet.`,
       );
     } catch (err) {
       setError(
@@ -502,74 +534,25 @@ function CheckoutPage() {
             </legend>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Choisissez le moyen de
-              paiement de votre commande.
+              Le paiement s'ouvre dans une fenêtre sécurisée sans quitter DUPLIKA.
             </p>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {/* T-MONEY */}
-
+            <div className="mt-5">
               <button
                 type="button"
-                onClick={() =>
-                  setPaymentMethod(
-                    "tmoney",
-                  )
-                }
-                className={`relative min-h-28 border p-5 text-left transition-colors ${
-                  paymentMethod ===
-                  "tmoney"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
+                onClick={() => setPaymentMethod("cinetpay")}
+                className="relative min-h-28 w-full border border-primary bg-primary/5 p-5 text-left"
               >
-                {paymentMethod ===
-                "tmoney" ? (
-                  <span className="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-4" />
-                  </span>
-                ) : null}
+                <span className="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <Check className="size-4" />
+                </span>
 
                 <span className="font-semibold">
-                  T-Money
+                  Paiement sécurisé CinetPay
                 </span>
 
                 <span className="mt-2 block text-sm text-muted-foreground">
-                  Paiement mobile via
-                  T-Money.
-                </span>
-              </button>
-
-              {/* FLOOZ */}
-
-              <button
-                type="button"
-                onClick={() =>
-                  setPaymentMethod(
-                    "flooz",
-                  )
-                }
-                className={`relative min-h-28 border p-5 text-left transition-colors ${
-                  paymentMethod ===
-                  "flooz"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                {paymentMethod ===
-                "flooz" ? (
-                  <span className="absolute right-4 top-4 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-4" />
-                  </span>
-                ) : null}
-
-                <span className="font-semibold">
-                  Flooz
-                </span>
-
-                <span className="mt-2 block text-sm text-muted-foreground">
-                  Paiement mobile via
-                  Flooz.
+                  Réglez par T-Money ou Flooz dans le guichet sécurisé.
                 </span>
               </button>
             </div>
@@ -695,10 +678,7 @@ function CheckoutPage() {
               </dt>
 
               <dd className="font-medium">
-                {paymentMethod ===
-                "tmoney"
-                  ? "T-Money"
-                  : "Flooz"}
+                CinetPay
               </dd>
             </div>
 
@@ -726,13 +706,10 @@ function CheckoutPage() {
             disabled={submitting}
           >
             {submitting
-              ? "Validation en cours…"
-              : `Continuer avec ${
-                  paymentMethod ===
-                  "tmoney"
-                    ? "T-Money"
-                    : "Flooz"
-                }`}
+              ? "Ouverture du paiement…"
+              : pendingCheckout
+                ? "Reprendre le paiement"
+                : "Payer avec CinetPay"}
           </Button>
 
           <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">

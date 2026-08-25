@@ -35,6 +35,13 @@ class Order extends Model
         'carrier',
         'paid_at',
         'payment_method',
+        'payment_provider',
+        'payment_transaction_id',
+        'payment_status',
+        'payment_provider_method',
+        'payment_operator_id',
+        'payment_verified_at',
+        'stock_decremented_at',
     ];
 
     protected function casts(): array
@@ -45,6 +52,8 @@ class Order extends Model
             'shipping' => 'integer',
             'total' => 'integer',
             'paid_at' => 'datetime',
+            'payment_verified_at' => 'datetime',
+            'stock_decremented_at' => 'datetime',
         ];
     }
 

@@ -31,35 +31,29 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | CinetPay
-    |--------------------------------------------------------------------------
-    |
-    | Configuration de l'API CinetPay.
-    | Les identifiants sensibles restent dans le fichier .env.
-    |
-    */
-
-    'cinetpay' => [
+'cinetpay' => [
     'api_key' => env('CINETPAY_API_KEY'),
-    'api_password' => env('CINETPAY_API_PASSWORD'),
+    'site_id' => env('CINETPAY_SITE_ID'),
+    'secret_key' => env('CINETPAY_SECRET_KEY'),
+    'notify_url' => env('CINETPAY_NOTIFY_URL'),
 
-    'base_url' => env(
-        'CINETPAY_BASE_URL',
-        'https://api.cinetpay.net'
+    'mode' => env('CINETPAY_MODE', 'PRODUCTION'),
+    'channels' => env('CINETPAY_CHANNELS', 'MOBILE_MONEY'),
+
+    'close_after_response' => env(
+        'CINETPAY_CLOSE_AFTER_RESPONSE',
+        true
     ),
 
-    'frontend_url' => env(
-        'FRONTEND_URL',
-        'http://localhost:5173'
-    ),
+    'min_amount' => env('CINETPAY_MIN_AMOUNT', 150),
+    'max_amount' => env('CINETPAY_MAX_AMOUNT', 1500000),
 
-    'backend_url' => env(
-        'BACKEND_URL',
-        'http://127.0.0.1:8000'
+    'verification_url' => env(
+        'CINETPAY_VERIFICATION_URL',
+        'https://api-checkout.cinetpay.com/v2/payment/check'
     ),
 ],
 
 ];
+
+

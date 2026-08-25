@@ -13,6 +13,7 @@ import type {
   ShippingZone,
   Variant,
 } from "./types";
+import type { CinetPayCheckoutData } from "./cinetpay";
 
 /**
  * Client de l'API Laravel (/api/v1).
@@ -270,7 +271,7 @@ export interface CheckoutPayload {
 
   shippingMethodId: string;
 
-  paymentMethod: "tmoney" | "flooz";
+  paymentMethod: "cinetpay";
 
   lines: CartLine[];
 
@@ -286,6 +287,13 @@ export interface CheckoutResult {
    * fournie par le backend.
    */
   paymentRedirectUrl: string | null;
+  cinetpay: CinetPayCheckoutData;
+}
+
+export interface PaymentSyncResult {
+  reference: string;
+  status: string;
+  paymentStatus: string | null;
 }
 
 export async function submitCheckout(
@@ -346,6 +354,29 @@ export async function submitCheckout(
       reference,
       status: "en_attente_paiement",
       paymentRedirectUrl: null,
+      cinetpay: {
+        apiKey: "demo",
+        siteId: "demo",
+        notifyUrl: "",
+        mode: "TEST",
+        closeAfterResponse: true,
+        transactionId: reference.replace(/-/g, ""),
+        amount: localQuote(payload.lines, payload.shippingMethodId).total,
+        currency: "XOF",
+        channels: "MOBILE_MONEY",
+        description: `Paiement commande ${reference}`,
+        metadata: reference,
+        customer: {
+          id: "demo",
+          name: payload.customer.lastName,
+          surname: payload.customer.firstName,
+          email: payload.customer.email,
+          phone: payload.customer.phone,
+          address: payload.address.line1,
+          city: payload.address.city,
+          country: "TG",
+        },
+      },
     };
   }
 
@@ -353,6 +384,15 @@ export async function submitCheckout(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function syncCinetPayPayment(
+  reference: string,
+): Promise<PaymentSyncResult> {
+  return request<PaymentSyncResult>(
+    `/payments/cinetpay/${encodeURIComponent(reference)}/sync`,
+    { method: "POST" },
+  );
 }
 
 export interface OrderEvent {

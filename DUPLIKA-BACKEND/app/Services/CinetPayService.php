@@ -2,167 +2,273 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Cache;
+use App\Models\Order;
+use App\Models\Product;
+use Carbon\Carbon;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use UnexpectedValueException;
 
 class CinetPayService
 {
-    private string $baseUrl;
-    private string $apiKey;
-    private string $apiPassword;
+    private const HMAC_FIELDS = [
+        'cpm_site_id',
+        'cpm_trans_id',
+        'cpm_trans_date',
+        'cpm_amount',
+        'cpm_currency',
+        'signature',
+        'payment_method',
+        'cel_phone_num',
+        'cpm_phone_prefixe',
+        'cpm_language',
+        'cpm_version',
+        'cpm_payment_config',
+        'cpm_page_action',
+        'cpm_custom',
+        'cpm_designation',
+        'cpm_error_message',
+    ];
 
-    public function __construct()
+    public function assertConfigured(): void
     {
-        $this->baseUrl = rtrim(
-            (string) config('services.cinetpay.base_url'),
-            '/'
+        $missing = collect([
+            'api_key',
+            'site_id',
+            'secret_key',
+            'notify_url',
+        ])->filter(
+            fn (string $key): bool => blank(config("services.cinetpay.{$key}"))
         );
 
-        $this->apiKey = (string)
-            config('services.cinetpay.api_key');
-
-        $this->apiPassword = (string)
-            config('services.cinetpay.api_password');
-
-        if (
-            $this->baseUrl === '' ||
-            $this->apiKey === '' ||
-            $this->apiPassword === ''
-        ) {
+        if ($missing->isNotEmpty()) {
             throw new RuntimeException(
-                'Configuration CinetPay incomplète.'
+                'CinetPay n\'est pas encore configuré sur le serveur.'
             );
         }
     }
 
     /**
-     * Récupère un jeton OAuth CinetPay.
+     * Paramètres transmis au SDK Seamless officiel.
+     * La Secret Key n'est jamais incluse dans cette réponse.
+     *
+     * @return array<string, mixed>
      */
-    public function getAccessToken(): string
+    public function checkoutData(Order $order): array
     {
-        return Cache::remember(
-            'cinetpay_access_token',
-            now()->addHours(23),
-            function (): string {
+        $this->assertConfigured();
+        $this->assertSupportedAmount((int) $order->total);
 
-                $response = Http::acceptJson()
-                    ->asJson()
-                    ->timeout(30)
-                    ->post(
-                        $this->baseUrl . '/v1/oauth/login',
-                        [
-                            'api_key' => $this->apiKey,
-                            'api_password' => $this->apiPassword,
-                        ]
-                    );
+        return [
+            'apiKey' => (string) config('services.cinetpay.api_key'),
+            'siteId' => (string) config('services.cinetpay.site_id'),
+            'notifyUrl' => (string) config('services.cinetpay.notify_url'),
+            'mode' => (string) config('services.cinetpay.mode', 'PRODUCTION'),
+            'closeAfterResponse' => (bool) config(
+                'services.cinetpay.close_after_response',
+                true
+            ),
+            'transactionId' => $order->payment_transaction_id,
+            'amount' => (int) $order->total,
+            'currency' => $order->currency,
+            'channels' => (string) config(
+                'services.cinetpay.channels',
+                'MOBILE_MONEY'
+            ),
+            'description' => "Paiement commande {$order->reference}",
+            'metadata' => $order->reference,
+            'customer' => [
+                'id' => (string) $order->user_id,
+                'name' => $order->last_name,
+                'surname' => $order->first_name,
+                'email' => $order->email,
+                'phone' => $order->phone ?? '',
+                'address' => $order->address_line1,
+                'city' => $order->city,
+                'country' => 'TG',
+            ],
+        ];
+    }
 
-                /*
-                 * TEMPORAIRE :
-                 * on affiche le corps brut de la réponse CinetPay
-                 * afin d'identifier précisément l'erreur HTTP 422.
-                 *
-                 * À retirer après résolution du problème.
-                 */
-                if ($response->failed()) {
-                    throw new RuntimeException(
-                        'CinetPay HTTP '
-                        . $response->status()
-                        . ' : '
-                        . $response->body()
-                    );
-                }
+    public function assertSupportedAmount(int $amount): void
+    {
+        $minimum = (int) config('services.cinetpay.min_amount', 150);
+        $maximum = (int) config('services.cinetpay.max_amount', 1500000);
 
-                $data = $response->json();
+        if ($amount <= 0 || $amount % 5 !== 0) {
+            throw new UnexpectedValueException(
+                'Le total CinetPay doit être positif et multiple de 5 XOF.'
+            );
+        }
 
-                if (
-                    ($data['status'] ?? null) !== 'OK' ||
-                    empty($data['access_token'])
-                ) {
-                    throw new RuntimeException(
-                        $data['message']
-                            ?? 'CinetPay n’a pas retourné de jeton valide.'
-                    );
-                }
+        if ($amount < $minimum || $amount > $maximum) {
+            throw new UnexpectedValueException(
+                "Le total CinetPay doit être compris entre {$minimum} et {$maximum} XOF."
+            );
+        }
+    }
 
-                return (string) $data['access_token'];
-            }
+    public function hasValidWebhookSignature(Request $request): bool
+    {
+        $secretKey = (string) config('services.cinetpay.secret_key');
+        $receivedToken = (string) $request->header('x-token', '');
+
+        if ($secretKey === '' || $receivedToken === '') {
+            return false;
+        }
+
+        $signedData = collect(self::HMAC_FIELDS)
+            ->map(fn (string $field): string => (string) $request->input($field, ''))
+            ->implode('');
+
+        $expectedToken = hash_hmac('sha256', $signedData, $secretKey);
+
+        return hash_equals(
+            strtolower($expectedToken),
+            strtolower(trim($receivedToken))
         );
     }
 
     /**
-     * Initialise un paiement CinetPay.
+     * Vérifie la transaction auprès de CinetPay, puis applique le résultat.
+     *
+     * @throws RequestException
      */
-    public function initializePayment(array $payload): array
+    public function synchronize(Order $order): Order
     {
-        $token = $this->getAccessToken();
+        $this->assertConfigured();
 
-        $response = Http::acceptJson()
-            ->asJson()
-            ->withToken($token)
-            ->timeout(30)
+        if (blank($order->payment_transaction_id)) {
+            throw new UnexpectedValueException(
+                'La commande ne possède pas de transaction CinetPay.'
+            );
+        }
+
+        $response = Http::asJson()
+            ->acceptJson()
+            ->withUserAgent('DUPLIKA-CinetPay/1.0')
+            ->timeout(15)
+            ->retry(2, 300)
             ->post(
-                $this->baseUrl . '/v1/payment',
-                $payload
+                (string) config('services.cinetpay.verification_url'),
+                [
+                    'apikey' => (string) config('services.cinetpay.api_key'),
+                    'site_id' => (string) config('services.cinetpay.site_id'),
+                    'transaction_id' => $order->payment_transaction_id,
+                ]
             );
 
-        if ($response->failed()) {
+        $response->throw();
+
+        $payload = $response->json();
+        $data = is_array($payload) ? ($payload['data'] ?? null) : null;
+
+        if (! is_array($data) || blank($data['status'] ?? null)) {
             throw new RuntimeException(
-                'CinetPay HTTP '
-                . $response->status()
-                . ' : '
-                . $response->body()
+                'CinetPay a renvoyé une réponse de vérification invalide.'
             );
         }
 
-        $data = $response->json();
-
-        if (
-            ($data['status'] ?? null) !== 'OK'
-        ) {
-            throw new RuntimeException(
-                $data['message']
-                    ?? 'Initialisation CinetPay refusée.'
-            );
-        }
-
-        return $data;
+        return $this->applyVerification($order, $data);
     }
 
     /**
-     * Vérifie le statut canonique d'un paiement.
+     * @param  array<string, mixed>  $data
      */
-    public function checkPayment(
-        string $merchantTransactionId
-    ): array {
-        $token = $this->getAccessToken();
-
-        $response = Http::acceptJson()
-            ->withToken($token)
-            ->timeout(30)
-            ->get(
-                $this->baseUrl
-                . '/v1/payment/'
-                . urlencode($merchantTransactionId)
-            );
-
-        if ($response->failed()) {
-            throw new RuntimeException(
-                'CinetPay HTTP '
-                . $response->status()
-                . ' : '
-                . $response->body()
-            );
-        }
-
-        return $response->json();
-    }
-
-    /**
-     * Vide le jeton CinetPay du cache Laravel.
-     */
-    public function forgetAccessToken(): void
+    private function applyVerification(Order $order, array $data): Order
     {
-        Cache::forget('cinetpay_access_token');
+        return DB::transaction(function () use ($order, $data): Order {
+            $lockedOrder = Order::query()
+                ->with('items')
+                ->lockForUpdate()
+                ->findOrFail($order->id);
+
+            $verifiedAmount = (int) round((float) ($data['amount'] ?? 0));
+            $verifiedCurrency = strtoupper((string) ($data['currency'] ?? ''));
+
+            if (
+                $verifiedAmount !== (int) $lockedOrder->total ||
+                $verifiedCurrency !== strtoupper($lockedOrder->currency)
+            ) {
+                Log::warning('Montant CinetPay incohérent.', [
+                    'order_reference' => $lockedOrder->reference,
+                    'expected_amount' => (int) $lockedOrder->total,
+                    'received_amount' => $verifiedAmount,
+                    'expected_currency' => $lockedOrder->currency,
+                    'received_currency' => $verifiedCurrency,
+                ]);
+
+                throw new UnexpectedValueException(
+                    'Le montant vérifié par CinetPay ne correspond pas à la commande.'
+                );
+            }
+
+            $paymentStatus = strtoupper((string) $data['status']);
+
+            $lockedOrder->fill([
+                'payment_status' => $paymentStatus,
+                'payment_provider_method' => $data['payment_method'] ?? null,
+                'payment_operator_id' => $data['operator_id'] ?? null,
+                'payment_verified_at' => now(),
+            ]);
+
+            if ($paymentStatus === 'ACCEPTED' && $lockedOrder->status !== 'payee') {
+                $lockedOrder->status = 'payee';
+                $lockedOrder->paid_at = $this->paymentDate($data['payment_date'] ?? null);
+
+                if ($lockedOrder->stock_decremented_at === null) {
+                    foreach ($lockedOrder->items as $item) {
+                        $product = Product::query()
+                            ->lockForUpdate()
+                            ->find($item->product_id);
+
+                        if (! $product) {
+                            continue;
+                        }
+
+                        if ($product->stock < $item->quantity) {
+                            Log::critical('Stock insuffisant après paiement CinetPay.', [
+                                'order_reference' => $lockedOrder->reference,
+                                'product_id' => $product->id,
+                                'available_stock' => $product->stock,
+                                'paid_quantity' => $item->quantity,
+                            ]);
+                        }
+
+                        $product->update([
+                            'stock' => max(0, $product->stock - $item->quantity),
+                        ]);
+                    }
+
+                    $lockedOrder->stock_decremented_at = now();
+                }
+            } elseif (
+                in_array($paymentStatus, ['REFUSED', 'CANCELLED'], true) &&
+                $lockedOrder->status !== 'payee'
+            ) {
+                $lockedOrder->status = 'annulee';
+            }
+
+            $lockedOrder->save();
+
+            return $lockedOrder->refresh();
+        });
+    }
+
+    private function paymentDate(mixed $value): Carbon
+    {
+        if (is_string($value) && trim($value) !== '') {
+            try {
+                return Carbon::parse($value);
+            } catch (\Throwable) {
+                // La date CinetPay est informative ; la vérification serveur fait autorité.
+            }
+        }
+
+        return now();
     }
 }
