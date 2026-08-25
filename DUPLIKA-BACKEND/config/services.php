@@ -7,10 +7,7 @@ return [
     | Third Party Services
     |--------------------------------------------------------------------------
     |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | Configuration des services externes utilisés par l'application.
     |
     */
 
@@ -34,5 +31,35 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | CinetPay
+    |--------------------------------------------------------------------------
+    |
+    | Configuration de l'API CinetPay.
+    | Les identifiants sensibles restent dans le fichier .env.
+    |
+    */
+
+    'cinetpay' => [
+    'api_key' => env('CINETPAY_API_KEY'),
+    'api_password' => env('CINETPAY_API_PASSWORD'),
+
+    'base_url' => env(
+        'CINETPAY_BASE_URL',
+        'https://api.cinetpay.net'
+    ),
+
+    'frontend_url' => env(
+        'FRONTEND_URL',
+        'http://localhost:5173'
+    ),
+
+    'backend_url' => env(
+        'BACKEND_URL',
+        'http://127.0.0.1:8000'
+    ),
+],
 
 ];
