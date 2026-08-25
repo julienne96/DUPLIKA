@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'cinetpay' => [
+        'api_key' => env('CINETPAY_API_KEY'),
+        'site_id' => env('CINETPAY_SITE_ID'),
+        'secret_key' => env('CINETPAY_SECRET_KEY'),
+        'notify_url' => env('CINETPAY_NOTIFY_URL'),
+        'mode' => env('CINETPAY_MODE', 'PRODUCTION'),
+        'channels' => env('CINETPAY_CHANNELS', 'MOBILE_MONEY'),
+        'close_after_response' => env('CINETPAY_CLOSE_AFTER_RESPONSE', true),
+        'min_amount' => env('CINETPAY_MIN_AMOUNT', 150),
+        'max_amount' => env('CINETPAY_MAX_AMOUNT', 1500000),
+        'verification_url' => env(
+            'CINETPAY_VERIFICATION_URL',
+            'https://api-checkout.cinetpay.com/v2/payment/check'
+        ),
+    ],
+
 ];
