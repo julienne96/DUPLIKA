@@ -42,6 +42,9 @@ class Order extends Model
         'payment_operator_id',
         'payment_verified_at',
         'stock_decremented_at',
+        'cinetpay_transaction_id',
+        'cinetpay_notify_token',
+        'cinetpay_payment_url',
     ];
 
     protected function casts(): array
