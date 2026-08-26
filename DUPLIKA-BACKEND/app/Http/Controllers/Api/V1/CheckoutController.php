@@ -43,9 +43,9 @@ class CheckoutController extends Controller
             'shippingMethodId' => ['required', 'in:pickup,delivery'],
 
             'paymentMethod' => [
-                'required',
-                'in:cinetpay',
-            ],
+            'required',
+            'in:cinetpay,tmoney,flooz',
+              ],
 
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.productSlug' => ['required', 'string'],
@@ -281,22 +281,52 @@ class CheckoutController extends Controller
             return $order;
         });
 
-        return response()->json([
-            'data' => [
-                'reference' =>
-                    $order->reference,
+       try {
+    $payment = $cinetPay->initializePayment($order);
+} catch (\Throwable $exception) {
+    report($exception);
 
-                'status' =>
-                    $order->status,
+    return response()->json([
+        'message' => 'La commande a été créée, mais le paiement CinetPay n’a pas pu être initialisé.',
+        'reference' => $order->reference,
+        'error' => $exception->getMessage(),
+    ], 502);
+}
 
-                'paymentMethod' =>
-                    $order->payment_method,
+return response()->json([
+    'data' => [
+        'reference' => $order->reference,
+        'status' => $order->status,
+        'paymentMethod' => $order->payment_method,
 
-                'paymentRedirectUrl' => null,
-                'cinetpay' =>
-                    $cinetPay->checkoutData($order),
-            ],
-        ], 201);
+        'paymentRedirectUrl' =>
+            $payment['payment_url'] ?? null,
+
+        'paymentStatus' =>
+            $payment['details']['status']
+            ?? $order->payment_status,
+
+        'cinetpay' => [
+            'transactionId' =>
+                $payment['transaction_id'] ?? null,
+
+            'merchantTransactionId' =>
+                $payment['merchant_transaction_id']
+                ?? $order->payment_transaction_id,
+
+            'paymentUrl' =>
+                $payment['payment_url'] ?? null,
+
+            'mustBeRedirected' =>
+                $payment['details']['must_be_redirected']
+                ?? true,
+
+            'message' =>
+                $payment['details']['message']
+                ?? null,
+        ],
+    ],
+], 201);
     }
 
     private function generateReference(): string
