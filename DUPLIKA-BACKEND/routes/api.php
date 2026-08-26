@@ -1,9 +1,15 @@
 <?php
 
+
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\CinetPayController;
+use App\Services\CinetPayService;
+
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\AddressController;
@@ -14,7 +20,9 @@ use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
 use App\Http\Controllers\Api\V1\NewsletterController;
-use App\Http\Controllers\Api\V1\CinetPayController;
+
+
+
 
 Route::prefix('v1')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index']);
@@ -31,9 +39,45 @@ Route::prefix('v1')->group(function () {
     Route::get('/orders/{reference}', [OrderController::class, 'show']);
     Route::post('/contact', [ContactMessageController::class, 'store']);
     Route::post('/newsletter/subscribe', [
-    NewsletterController::class,
-    'subscribe'
-]);
+    NewsletterController::class,'subscribe']);
+
+    Route::get('/cinetpay/diagnostic', function (CinetPayService $cinetPay) {
+    try {
+        $cinetPay->forgetAccessToken();
+
+        $cinetPay->getAccessToken();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Authentification CinetPay réussie.',
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});
+
+    Route::get('/cinetpay/diagnostic', function (
+    CinetPayService $cinetPay
+) {
+    try {
+        $cinetPay->forgetAccessToken();
+        $cinetPay->getAccessToken();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Authentification CinetPay réussie.',
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});
+
     Route::match(['get', 'post'], '/payments/cinetpay/notify', [
         CinetPayController::class,
         'notify',
