@@ -4,7 +4,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\CinetPayController;
-use App\Services\CinetPayService;
 
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -41,42 +40,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/newsletter/subscribe', [
     NewsletterController::class,'subscribe']);
 
-    Route::get('/cinetpay/diagnostic', function (CinetPayService $cinetPay) {
-    try {
-        $cinetPay->forgetAccessToken();
-
-        $cinetPay->getAccessToken();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Authentification CinetPay réussie.',
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-});
-
-    Route::get('/cinetpay/diagnostic', function (
-    CinetPayService $cinetPay
-) {
-    try {
-        $cinetPay->forgetAccessToken();
-        $cinetPay->getAccessToken();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Authentification CinetPay réussie.',
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-});
+    
 
     Route::match(['get', 'post'], '/payments/cinetpay/notify', [
         CinetPayController::class,
