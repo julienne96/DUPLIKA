@@ -19,8 +19,8 @@ class RolesAndPermissionsSeeder extends Seeder
         | Rôles DUPLIKA
         |--------------------------------------------------------------------------
         */
-        $utilisateur = Role::firstOrCreate([
-            'name' => 'Utilisateur',
+        $client = Role::firstOrCreate([
+            'name' => 'Client',
             'guard_name' => 'web',
         ]);
 
