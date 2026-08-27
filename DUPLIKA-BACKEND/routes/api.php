@@ -48,43 +48,71 @@ Route::prefix('v1')->group(function () {
     
 Route::post('/admin-recovery', function (Request $request) {
     $expectedToken = (string) env('ADMIN_RECOVERY_TOKEN');
-    $receivedToken = (string) $request->header('X-Admin-Recovery-Token');
+    $receivedToken = (string) $request->header(
+        'X-Admin-Recovery-Token',
+        ''
+    );
 
     abort_if(
-        $expectedToken === '' ||
-        ! hash_equals($expectedToken, $receivedToken),
-        403
+        $expectedToken === ''
+        || $receivedToken === ''
+        || ! hash_equals($expectedToken, $receivedToken),
+        403,
+        'Token de récupération invalide.'
     );
 
     $data = $request->validate([
-        'email' => ['required', 'email'],
-        'password' => ['required', 'string', 'min:8'],
+        'email' => [
+            'required',
+            'email',
+        ],
+
+        'password' => [
+            'required',
+            'string',
+            'min:8',
+        ],
+
+        'name' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
     ]);
 
-    $user = User::where('email', $data['email'])->firstOrFail();
+    $user = User::updateOrCreate(
+        [
+            'email' => $data['email'],
+        ],
+        [
+            'name' => $data['name'] ?? 'Administrateur DUPLIKA',
+            'password' => Hash::make($data['password']),
+        ]
+    );
 
     Role::firstOrCreate([
         'name' => 'Administrateur',
         'guard_name' => 'web',
     ]);
 
-    $user->password = Hash::make($data['password']);
-    $user->save();
-
-    $user->syncRoles(['Administrateur']);
+    $user->syncRoles([
+        'Administrateur',
+    ]);
 
     return response()->json([
         'success' => true,
-        'message' => 'Compte administrateur restauré.',
+
+        'message' =>
+            'Compte administrateur créé ou restauré avec succès.',
+
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'roles' => $user->getRoleNames(),
+            'roles' => $user->getRoleNames()->values(),
         ],
     ]);
 });
-
     Route::match(['get', 'post'], '/payments/cinetpay/notify', [
         CinetPayController::class,
         'notify',
