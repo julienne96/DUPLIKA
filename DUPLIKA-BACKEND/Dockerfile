@@ -35,4 +35,4 @@ RUN mkdir -p \
 
 EXPOSE 10000
 
-CMD sh -c "php artisan storage:link || true; php artisan migrate --force; php artisan db:seed --class=CategorySeeder --force; php artisan db:seed --class=CollectionSeeder --force; php artisan db:seed --class=ProductSeeder --force; php artisan optimize; php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"
+CMD sh -c "php artisan storage:link || true; php artisan migrate --force; php artisan optimize; php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"
