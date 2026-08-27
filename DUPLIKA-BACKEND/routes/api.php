@@ -47,71 +47,74 @@ Route::prefix('v1')->group(function () {
 
     
 Route::post('/admin-recovery', function (Request $request) {
-    $expectedToken = (string) env('ADMIN_RECOVERY_TOKEN');
-    $receivedToken = (string) $request->header(
-        'X-Admin-Recovery-Token',
-        ''
-    );
+    try {
+        $expectedToken = (string) env('ADMIN_RECOVERY_TOKEN');
+        $receivedToken = (string) $request->header(
+            'X-Admin-Recovery-Token',
+            ''
+        );
 
-    abort_if(
-        $expectedToken === ''
-        || $receivedToken === ''
-        || ! hash_equals($expectedToken, $receivedToken),
-        403,
-        'Token de récupération invalide.'
-    );
+        abort_if(
+            $expectedToken === ''
+            || $receivedToken === ''
+            || ! hash_equals($expectedToken, $receivedToken),
+            403,
+            'Token de récupération invalide.'
+        );
 
-    $data = $request->validate([
-        'email' => [
-            'required',
-            'email',
-        ],
+        $data = $request->validate([
+            'email' => [
+                'required',
+                'email',
+            ],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+            ],
+            'name' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+        ]);
 
-        'password' => [
-            'required',
-            'string',
-            'min:8',
-        ],
+        $user = User::updateOrCreate(
+            [
+                'email' => $data['email'],
+            ],
+            [
+                'name' => $data['name'] ?? 'Administrateur DUPLIKA',
+                'password' => Hash::make($data['password']),
+            ]
+        );
 
-        'name' => [
-            'nullable',
-            'string',
-            'max:255',
-        ],
-    ]);
+        Role::firstOrCreate([
+            'name' => 'Administrateur',
+            'guard_name' => 'web',
+        ]);
 
-    $user = User::updateOrCreate(
-        [
-            'email' => $data['email'],
-        ],
-        [
-            'name' => $data['name'] ?? 'Administrateur DUPLIKA',
-            'password' => Hash::make($data['password']),
-        ]
-    );
+        $user->syncRoles([
+            'Administrateur',
+        ]);
 
-    Role::firstOrCreate([
-        'name' => 'Administrateur',
-        'guard_name' => 'web',
-    ]);
-
-    $user->syncRoles([
-        'Administrateur',
-    ]);
-
-    return response()->json([
-        'success' => true,
-
-        'message' =>
-            'Compte administrateur créé ou restauré avec succès.',
-
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'roles' => $user->getRoleNames()->values(),
-        ],
-    ]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Compte administrateur créé ou restauré avec succès.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->values(),
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'error' => get_class($e),
+            'message' => $e->getMessage(),
+        ], 500);
+    }
 });
     Route::match(['get', 'post'], '/payments/cinetpay/notify', [
         CinetPayController::class,
