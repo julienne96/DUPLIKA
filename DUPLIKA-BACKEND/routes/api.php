@@ -1,7 +1,11 @@
 <?php
 
 
+
 use App\Models\User;
+
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\CinetPayController;
@@ -42,17 +46,42 @@ Route::prefix('v1')->group(function () {
     NewsletterController::class,'subscribe']);
 
     
-Route::get('/admin-users-diagnostic', function () {
+Route::post('/admin-recovery', function (Request $request) {
+    $expectedToken = (string) env('ADMIN_RECOVERY_TOKEN');
+    $receivedToken = (string) $request->header('X-Admin-Recovery-Token');
+
+    abort_if(
+        $expectedToken === '' ||
+        ! hash_equals($expectedToken, $receivedToken),
+        403
+    );
+
+    $data = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required', 'string', 'min:8'],
+    ]);
+
+    $user = User::where('email', $data['email'])->firstOrFail();
+
+    Role::firstOrCreate([
+        'name' => 'Administrateur',
+        'guard_name' => 'web',
+    ]);
+
+    $user->password = Hash::make($data['password']);
+    $user->save();
+
+    $user->syncRoles(['Administrateur']);
+
     return response()->json([
-        'data' => User::query()
-            ->with('roles:id,name')
-            ->get(['id', 'name', 'email'])
-            ->map(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'roles' => $user->roles->pluck('name')->values(),
-            ]),
+        'success' => true,
+        'message' => 'Compte administrateur restauré.',
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'roles' => $user->getRoleNames(),
+        ],
     ]);
 });
 
