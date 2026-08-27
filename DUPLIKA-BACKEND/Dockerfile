@@ -1,3 +1,15 @@
+FROM node:22-alpine AS node-build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+
 FROM php:8.3-cli
 
 WORKDIR /var/www/html
@@ -25,6 +37,8 @@ RUN composer install \
     --no-interaction \
     --prefer-dist
 
+COPY --from=node-build /app/public/build /var/www/html/public/build
+
 RUN mkdir -p \
     storage/framework/cache \
     storage/framework/sessions \
@@ -34,6 +48,5 @@ RUN mkdir -p \
     && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
-
 
 CMD sh -c "php artisan storage:link || true; php artisan migrate --force; php artisan filament:assets; php artisan optimize; php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"
