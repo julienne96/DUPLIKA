@@ -1,6 +1,7 @@
 <?php
 
 
+use App\Models\User;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\CinetPayController;
@@ -41,6 +42,19 @@ Route::prefix('v1')->group(function () {
     NewsletterController::class,'subscribe']);
 
     
+Route::get('/admin-users-diagnostic', function () {
+    return response()->json([
+        'data' => User::query()
+            ->with('roles:id,name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->roles->pluck('name')->values(),
+            ]),
+    ]);
+});
 
     Route::match(['get', 'post'], '/payments/cinetpay/notify', [
         CinetPayController::class,
