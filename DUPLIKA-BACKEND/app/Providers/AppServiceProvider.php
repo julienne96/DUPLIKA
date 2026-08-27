@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Providers;
-
+use Illuminate\Support\Facades\URL;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\ServiceProvider;
@@ -14,10 +14,9 @@ class AppServiceProvider extends ServiceProvider
     }
 
     public function boot(): void
-    {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::TOPBAR_END,
-            fn () => view('filament.components.topbar-actions'),
-        );
+{
+    if (app()->environment('production')) {
+        URL::forceScheme('https');
     }
+}
 }
