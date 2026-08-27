@@ -31,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
         ->login()
         ->userMenu(false)
         ->defaultThemeMode(ThemeMode::Light)
-        ->viteTheme('resources/css/filament/admin/theme.css')
+       
 
         // Branding DUPLIKA
         ->brandName('DUPLIKA')
