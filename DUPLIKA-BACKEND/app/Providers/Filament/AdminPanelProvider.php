@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\SetLocale;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -10,80 +12,120 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\Enums\ThemeMode;
-use App\Http\Middleware\SetLocale;
-
 
 class AdminPanelProvider extends PanelProvider
 {
-   public function panel(Panel $panel): Panel
-{
-    return $panel
-        ->default()
-        ->id('admin')
-        ->path('admin')
-        ->login()
-        ->userMenu(false)
-        ->defaultThemeMode(ThemeMode::Light)
-       
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->default()
+            ->id('admin')
+            ->path('admin')
+            ->login()
 
-       // Branding DUPLIKA
-->brandName('DUPLIKA')
-->brandLogo(secure_asset('images/logo-duplika.png'))
-->brandLogoHeight('3rem')
-        // Couleur principale
-        ->colors([
-            'primary' => Color::Amber,
-        ])
+            ->defaultThemeMode(ThemeMode::Light)
 
-        // Ressources
-        ->discoverResources(
-            in: app_path('Filament/Resources'),
-            for: 'App\Filament\Resources'
-        )
+            /*
+             * Thème personnalisé DUPLIKA.
+             */
+            ->viteTheme(
+                'resources/css/filament/admin/theme.css'
+            )
 
-        // Pages
-        ->discoverPages(
-            in: app_path('Filament/Pages'),
-            for: 'App\Filament\Pages'
-        )
+            /*
+             * Branding DUPLIKA.
+             */
+            ->brandName('DUPLIKA')
+            ->brandLogo(
+                secure_asset('images/logo-duplika.png')
+            )
+            ->brandLogoHeight('3rem')
 
-        ->pages([
-            Dashboard::class,
-        ])
+            /*
+             * Couleur principale Filament.
+             */
+            ->colors([
+                'primary' => Color::Amber,
+            ])
 
-        // Widgets
-        ->discoverWidgets(
-            in: app_path('Filament/Widgets'),
-            for: 'App\Filament\Widgets'
-        )
+            /*
+             * Topbar personnalisée :
+             * thème clair/sombre,
+             * FR / EN,
+             * voir le site,
+             * déconnexion.
+             */
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): string =>
+                    view(
+                        'filament.components.topbar-actions'
+                    )->render()
+            )
 
-       ->widgets([
-    //
-])
+            /*
+             * On garde le menu utilisateur Filament désactivé
+             * puisque la déconnexion est déjà dans notre topbar.
+             */
+            ->userMenu(false)
 
-        // Middlewares
-        ->middleware([
-            EncryptCookies::class,
-            AddQueuedCookiesToResponse::class,
-            StartSession::class,
-            SetLocale::class,
-            AuthenticateSession::class,
-            ShareErrorsFromSession::class,
-            PreventRequestForgery::class,
-            SubstituteBindings::class,
-            DisableBladeIconComponents::class,
-            DispatchServingFilamentEvent::class,
-        ])
+            /*
+             * Ressources.
+             */
+            ->discoverResources(
+                in: app_path('Filament/Resources'),
+                for: 'App\Filament\Resources'
+            )
 
-        ->authMiddleware([
-            Authenticate::class,
-        ]);
-}
+            /*
+             * Pages.
+             */
+            ->discoverPages(
+                in: app_path('Filament/Pages'),
+                for: 'App\Filament\Pages'
+            )
+
+            ->pages([
+                Dashboard::class,
+            ])
+
+            /*
+             * Widgets.
+             */
+            ->discoverWidgets(
+                in: app_path('Filament/Widgets'),
+                for: 'App\Filament\Widgets'
+            )
+
+            ->widgets([
+                //
+            ])
+
+            /*
+             * Middlewares.
+             */
+            ->middleware([
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                SetLocale::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                PreventRequestForgery::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+            ])
+
+            ->authMiddleware([
+                Authenticate::class,
+            ]);
+    }
 }
