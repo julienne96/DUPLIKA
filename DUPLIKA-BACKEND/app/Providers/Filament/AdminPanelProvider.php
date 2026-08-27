@@ -33,11 +33,10 @@ class AdminPanelProvider extends PanelProvider
         ->defaultThemeMode(ThemeMode::Light)
        
 
-        // Branding DUPLIKA
-        ->brandName('DUPLIKA')
-        ->brandLogo(asset('images/logo-duplika.png'))
-        ->brandLogoHeight('3rem')
-
+       // Branding DUPLIKA
+->brandName('DUPLIKA')
+->brandLogo(secure_asset('images/logo-duplika.png'))
+->brandLogoHeight('3rem')
         // Couleur principale
         ->colors([
             'primary' => Color::Amber,
