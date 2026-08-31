@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\Collections\Schemas;
 
+use App\Services\CloudinaryService;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class CollectionForm
 {
@@ -41,10 +43,25 @@ class CollectionForm
                         FileUpload::make('image')
                             ->label('Image')
                             ->image()
-                            ->disk('public')
-                            ->directory('collections')
-                            ->visibility('public')
-                            ->imageEditor(),
+                            ->imageEditor()
+                            ->maxSize(5120)
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ])
+                            ->saveUploadedFileUsing(
+                                function (TemporaryUploadedFile $file): string {
+                                    $cloudinary = app(CloudinaryService::class);
+
+                                    $result = $cloudinary->uploadImage(
+                                        $file->getRealPath(),
+                                        'duplika/collections'
+                                    );
+
+                                    return $result['url'];
+                                }
+                            ),
 
                         TextInput::make('sort_order')
                             ->label("Ordre d'affichage")

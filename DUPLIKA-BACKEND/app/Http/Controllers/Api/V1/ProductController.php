@@ -114,11 +114,13 @@ class ProductController extends Controller
             /*
              * URL complète de l'image.
              */
-            'image' => $product->image
-                ? $baseUrl
-                    . '/storage/'
-                    . ltrim($product->image, '/')
-                : null,
+            'image' => str_starts_with($product->image ?? '', 'http')
+    ? $product->image
+    : ($product->image
+        ? $baseUrl
+            . '/storage/'
+            . ltrim($product->image, '/')
+        : null),
 
             'is_new' =>
                 $product->is_new,

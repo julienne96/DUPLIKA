@@ -32,9 +32,11 @@ class CollectionController extends Controller
                     'slug' => $collection->slug,
                     'tagline' => $collection->tagline,
 
-                    'image' => $collection->image
-                        ? $baseUrl . '/storage/' . ltrim($collection->image, '/')
-                        : null,
+                    'image' => str_starts_with($collection->image ?? '', 'http')
+    ? $collection->image
+    : ($collection->image
+        ? url('/storage/' . ltrim($collection->image, '/'))
+        : null),
                 ];
             });
 
@@ -68,9 +70,11 @@ class CollectionController extends Controller
                 'slug' => $collection->slug,
                 'tagline' => $collection->tagline,
 
-                'image' => $collection->image
-                    ? $baseUrl . '/storage/' . ltrim($collection->image, '/')
-                    : null,
+                'image' => str_starts_with($collection->image ?? '', 'http')
+    ? $collection->image
+    : ($collection->image
+        ? url('/storage/' . ltrim($collection->image, '/'))
+        : null),
 
                 'is_active' => $collection->is_active,
                 'sort_order' => $collection->sort_order,

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Services\CloudinaryService;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class ProductForm
 {
@@ -63,7 +65,6 @@ class ProductForm
                     ])
                     ->columns(2),
 
-
                 Section::make('Prix et stock')
                     ->schema([
 
@@ -96,19 +97,32 @@ class ProductForm
                     ])
                     ->columns(2),
 
-
                 Section::make('Image du produit')
                     ->schema([
 
                         FileUpload::make('image')
-                         ->label('Image principale')
-                         ->image()
-                         ->disk('public')
-                         ->directory('products')
-                         ->visibility('public')
-                         ->imageEditor()
-                    ]),
+                            ->label('Image principale')
+                            ->image()
+                            ->imageEditor()
+                            ->maxSize(5120)
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ])
+                            ->saveUploadedFileUsing(
+                                function (TemporaryUploadedFile $file): string {
+                                    $cloudinary = app(CloudinaryService::class);
 
+                                    $result = $cloudinary->uploadImage(
+                                        $file->getRealPath(),
+                                        'duplika/products'
+                                    );
+
+                                    return $result['url'];
+                                }
+                            ),
+                    ]),
 
                 Section::make('Critères SmartMatch')
                     ->description(
@@ -166,7 +180,6 @@ class ProductForm
                             ->searchable(),
                     ])
                     ->columns(2),
-
 
                 Section::make('Publication')
                     ->schema([
