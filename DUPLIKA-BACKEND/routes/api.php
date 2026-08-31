@@ -1,6 +1,6 @@
 <?php
 
-
+use Illuminate\Support\Facades\Http;
 
 use App\Models\User;
 
@@ -45,6 +45,20 @@ Route::prefix('v1')->group(function () {
     Route::post('/newsletter/subscribe', [
     NewsletterController::class,'subscribe']);
 
+    Route::get('/debug-outbound-ip', function () {
+    $response = Http::post(
+        env('WEBHOOK_TEST_URL'),
+        [
+            'source' => 'duplika-render',
+            'test' => true,
+        ]
+    );
+
+    return response()->json([
+        'sent' => $response->successful(),
+        'status' => $response->status(),
+    ]);
+});
     
     Route::match(['get', 'post'], '/payments/cinetpay/notify', [
         CinetPayController::class,
