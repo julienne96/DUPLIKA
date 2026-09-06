@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\SmartMatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class SmartMatchController extends Controller
 {
@@ -35,9 +36,13 @@ class SmartMatchController extends Controller
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
                    'image' => $product->image
-    ? request()->getSchemeAndHttpHost()
-        . '/storage/'
-        . ltrim($product->image, '/')
+    ? (
+        Str::startsWith($product->image, ['http://', 'https://'])
+            ? $product->image
+            : request()->getSchemeAndHttpHost()
+                . '/storage/'
+                . ltrim($product->image, '/')
+    )
     : null,
                     'wig_type' => $product->wig_type,
                     'texture' => $product->texture,
