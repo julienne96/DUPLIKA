@@ -12,6 +12,41 @@ use Illuminate\Support\Facades\DB;
 
 class ReviewController extends Controller
 {
+
+public function latest(): JsonResponse
+{
+    $reviews = Review::query()
+        ->with([
+            'user:id,name',
+            'product:id,name,slug',
+        ])
+        ->where('status', 'approved')
+        ->whereNotNull('comment')
+        ->where('comment', '!=', '')
+        ->latest('reviewed_at')
+        ->limit(6)
+        ->get();
+
+    return response()->json([
+        'data' => $reviews->map(function (Review $review) {
+            return [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'reviewed_at' => optional($review->reviewed_at)?->toISOString(),
+
+                'user' => [
+                    'name' => $review->user?->name ?? 'Cliente DUPLIKA',
+                ],
+
+                'product' => [
+                    'name' => $review->product?->name,
+                    'slug' => $review->product?->slug,
+                ],
+            ];
+        }),
+    ]);
+}
     public function index(Product $product): JsonResponse
     {
         $reviews = Review::query()

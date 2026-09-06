@@ -1012,3 +1012,94 @@ export async function subscribeNewsletter(
     },
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Avis clients                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface ProductReview {
+  id: number;
+  rating: number;
+  comment: string | null;
+  reviewed_at: string | null;
+  user: {
+    name: string;
+  };
+}
+
+export interface CreateProductReviewInput {
+  rating: number;
+  comment?: string;
+}
+
+/**
+ * Récupère les avis approuvés d'un produit.
+ */
+export async function fetchProductReviews(
+  productId: string | number,
+): Promise<ProductReview[]> {
+  if (USING_DEMO_DATA) {
+    return [];
+  }
+
+  return request<ProductReview[]>(
+    `/products/${productId}/reviews`,
+  );
+}
+
+/**
+ * Publie l'avis du client connecté.
+ *
+ * Le backend vérifie que :
+ * - le client est authentifié ;
+ * - il a réellement acheté le produit ;
+ * - la commande est payée ;
+ * - il n'a pas déjà donné un avis sur ce produit.
+ */
+export async function createProductReview(
+  productId: string | number,
+  input: CreateProductReviewInput,
+): Promise<{
+  id: number;
+  rating: number;
+  comment: string | null;
+  status: string;
+  reviewed_at: string | null;
+}> {
+  if (USING_DEMO_DATA) {
+    throw new ApiError(
+      "La publication des avis nécessite l'API DUPLIKA.",
+      503,
+    );
+  }
+
+  return request(
+    `/products/${productId}/reviews`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export interface LatestReview {
+  id: number;
+  rating: number;
+  comment: string | null;
+  reviewed_at: string | null;
+  user: {
+    name: string;
+  };
+  product: {
+    name: string | null;
+    slug: string | null;
+  };
+}
+
+export async function fetchLatestReviews(): Promise<LatestReview[]> {
+  if (USING_DEMO_DATA) {
+    return [];
+  }
+
+  return request<LatestReview[]>("/reviews/latest");
+}

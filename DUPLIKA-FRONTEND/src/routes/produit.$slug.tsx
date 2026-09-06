@@ -1,7 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Minus, Plus, ShieldCheck, Truck, Clock } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  ShieldCheck,
+  Truck,
+  Clock,
+  Star,
+} from "lucide-react";
 
 import { getProductImage } from "@/lib/product-images";
 
@@ -24,7 +31,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { fetchProduct, fetchProducts } from "@/lib/api";
+import {
+  ApiError,
+  createProductReview,
+  fetchProduct,
+  fetchProductReviews,
+  fetchProducts,
+} from "@/lib/api";
 import { discountPercent, formatPrice } from "@/lib/format";
 import { StockBadge } from "@/components/shop/StockBadge";
 import { ProductCard } from "@/components/shop/ProductCard";
@@ -73,6 +86,11 @@ function ProductPage() {
   const product = Route.useLoaderData() as Product;
   const cart = useCart();
 
+  const queryClient = useQueryClient();
+
+const [reviewRating, setReviewRating] = useState(0);
+const [reviewComment, setReviewComment] = useState("");
+
   const [selection, setSelection] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       product.options.map((option) => [
@@ -99,6 +117,50 @@ function ProductPage() {
     queryKey: ["products"],
     queryFn: fetchProducts,
   });
+
+const {
+  data: reviews = [],
+  isLoading: reviewsLoading,
+} = useQuery({
+  queryKey: ["product-reviews", product.id],
+  queryFn: () => fetchProductReviews(product.id),
+});
+
+const reviewMutation = useMutation({
+  mutationFn: () =>
+    createProductReview(product.id, {
+      rating: reviewRating,
+     ...(reviewComment.trim()
+  ? { comment: reviewComment.trim() }
+  : {}),
+    }),
+
+  onSuccess: async () => {
+    toast.success("Votre avis a bien été publié.");
+
+    setReviewRating(0);
+    setReviewComment("");
+
+    await queryClient.invalidateQueries({
+      queryKey: ["product-reviews", product.id],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ["products"],
+    });
+  },
+
+  onError: (error) => {
+    if (error instanceof ApiError) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.error(
+      "Impossible de publier votre avis pour le moment.",
+    );
+  },
+});
 
   const related = (all ?? []).filter((item) =>
     product.relatedSlugs.includes(item.slug),
@@ -565,7 +627,228 @@ function ProductPage() {
         </div>
       </div>
 
+            {/* AVIS CLIENTS */}
+
+      <section className="mt-16">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl">
+              Avis clients
+            </h2>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Avis laissés par des clientes ayant acheté ce produit.
+            </p>
+          </div>
+
+          {reviews.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const average =
+                    reviews.reduce(
+                      (total, review) =>
+                        total + review.rating,
+                      0,
+                    ) / reviews.length;
+
+                  return (
+                    <Star
+                      key={star}
+                      className={cn(
+                        "size-5",
+                        star <= Math.round(average)
+                          ? "fill-current text-primary"
+                          : "text-muted-foreground",
+                      )}
+                    />
+                  );
+                })}
+              </div>
+
+              <span className="text-sm font-medium">
+                {(
+                  reviews.reduce(
+                    (total, review) =>
+                      total + review.rating,
+                    0,
+                  ) / reviews.length
+                ).toFixed(1)}
+                /5
+              </span>
+
+              <span className="text-sm text-muted-foreground">
+                ({reviews.length}{" "}
+                {reviews.length > 1 ? "avis" : "avis"})
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {/* FORMULAIRE */}
+
+        <div className="mt-8 rounded-xl border border-border p-6">
+          <h3 className="text-lg font-semibold">
+            Donnez votre avis
+          </h3>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vous devez avoir acheté ce produit pour publier un avis.
+          </p>
+
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-medium">
+              Votre note
+            </p>
+
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  aria-label={`${star} étoile${star > 1 ? "s" : ""}`}
+                  onClick={() => setReviewRating(star)}
+                  className="rounded p-1 transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={cn(
+                      "size-7 transition-colors",
+                      star <= reviewRating
+                        ? "fill-current text-primary"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <label
+              htmlFor="review-comment"
+              className="text-sm font-medium"
+            >
+              Votre commentaire
+            </label>
+
+            <textarea
+              id="review-comment"
+              value={reviewComment}
+              onChange={(event) =>
+                setReviewComment(event.target.value)
+              }
+              maxLength={1500}
+              rows={4}
+              placeholder="Que pensez-vous de ce produit ?"
+              className="mt-2 w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+            />
+
+            <p className="mt-1 text-right text-xs text-muted-foreground">
+              {reviewComment.length}/1500
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            className="mt-4"
+            disabled={
+              reviewRating === 0 ||
+              reviewMutation.isPending
+            }
+            onClick={() => reviewMutation.mutate()}
+          >
+            {reviewMutation.isPending
+              ? "Publication..."
+              : "Publier mon avis"}
+          </Button>
+        </div>
+
+        {/* LISTE DES AVIS */}
+
+        <div className="mt-8">
+          {reviewsLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center">
+              <p className="font-medium">
+                Aucun avis pour le moment
+              </p>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Soyez la première cliente à donner votre avis sur ce produit.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <article
+                  key={review.id}
+                  className="rounded-xl border border-border p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">
+                        {review.user.name}
+                      </p>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Achat vérifié
+                      </p>
+                    </div>
+
+                    <div
+                      className="flex"
+                      aria-label={`${review.rating} étoiles sur 5`}
+                    >
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={cn(
+                            "size-4",
+                            star <= review.rating
+                              ? "fill-current text-primary"
+                              : "text-muted-foreground",
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {review.comment ? (
+                    <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                      {review.comment}
+                    </p>
+                  ) : null}
+
+                  {review.reviewed_at ? (
+                    <time
+                      className="mt-3 block text-xs text-muted-foreground"
+                      dateTime={review.reviewed_at}
+                    >
+                      {new Intl.DateTimeFormat("fr-FR", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      }).format(
+                        new Date(review.reviewed_at),
+                      )}
+                    </time>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+    
+
       {/* PRODUITS COMPLÉMENTAIRES */}
+          
+         
 
       {addOns.length > 0 ? (
         <section className="mt-16">

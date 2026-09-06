@@ -3,7 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Truck, ShieldCheck, Sparkles, Headphones, Star, Check } from "lucide-react";
 import heroImage from "@/assets/hero.jpg";
 import { Button } from "@/components/ui/button";
-import { fetchCollections, fetchProducts } from "@/lib/api";
+import {
+  fetchCollections,
+  fetchProducts,
+  fetchLatestReviews,
+} from "@/lib/api";
 import { ProductCard, ProductCardSkeleton } from "@/components/shop/ProductCard";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -35,15 +39,18 @@ const arguments_ = [
   { icon: Headphones, title: "Conseil personnalisé", text: "Une équipe qui répond avant et après votre achat." },
 ];
 
-const temoignages = [
-  { nom: "Aïcha K.", texte: "La lace se fond parfaitement, personne n'a deviné. Le suivi de commande était impeccable.", note: 5 },
-  { nom: "Mariam T.", texte: "Deuxième commande. Les boucles tiennent après plusieurs lavages, c'est rare.", note: 5 },
-  { nom: "Fatou D.", texte: "Livraison en 24 h à Abidjan et un vrai conseil sur la taille de bonnet.", note: 4 },
-];
+
 
 function Home() {
   const { data: products, isLoading } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const { data: collections } = useQuery({ queryKey: ["collections"], queryFn: fetchCollections });
+  const {
+  data: latestReviews = [],
+  isLoading: reviewsLoading,
+} = useQuery({
+  queryKey: ["latest-reviews"],
+  queryFn: fetchLatestReviews,
+});
 
   const nouveautes = (products ?? []).filter((p) => p.isNew).slice(0, 4);
   const recommandes = (products ?? [])
@@ -201,26 +208,81 @@ function Home() {
         </div>
       </section>
 
-      {/* 9. Témoignages */}
-      <Section eyebrow="Elles nous font confiance" title="Avis vérifiés">
-        <div className="grid gap-5 md:grid-cols-3">
-          {temoignages.map((t) => (
-            <figure key={t.nom} className="rounded-lg border border-border bg-card p-6">
-              <div className="flex gap-0.5" aria-label={`${t.note} étoiles sur 5`}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={i < t.note ? "size-4 fill-primary text-primary" : "size-4 text-muted-foreground/40"}
-                    aria-hidden
-                  />
-                ))}
-              </div>
-              <blockquote className="mt-3 text-sm">« {t.texte} »</blockquote>
-              <figcaption className="mt-3 text-xs text-muted-foreground">{t.nom}</figcaption>
-            </figure>
-          ))}
-        </div>
-      </Section>
+     
+      {/* 9. Avis vérifiés */}
+<Section
+  eyebrow="Elles nous font confiance"
+  title="Avis vérifiés"
+>
+  {reviewsLoading ? (
+    <div className="grid gap-5 md:grid-cols-3">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="h-40 animate-pulse rounded-lg border border-border bg-muted"
+        />
+      ))}
+    </div>
+  ) : latestReviews.length === 0 ? (
+    <div className="rounded-lg border border-dashed border-border p-8 text-center">
+      <p className="font-medium">
+        Aucun avis vérifié pour le moment
+      </p>
+
+      <p className="mt-2 text-sm text-muted-foreground">
+        Les avis des clientes ayant acheté un produit apparaîtront ici.
+      </p>
+    </div>
+  ) : (
+    <div className="grid gap-5 md:grid-cols-3">
+      {latestReviews.slice(0, 3).map((review) => (
+        <figure
+          key={review.id}
+          className="rounded-lg border border-border bg-card p-6"
+        >
+          <div
+            className="flex gap-0.5"
+            aria-label={`${review.rating} étoiles sur 5`}
+          >
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={
+                  i < review.rating
+                    ? "size-4 fill-primary text-primary"
+                    : "size-4 text-muted-foreground/40"
+                }
+                aria-hidden
+              />
+            ))}
+          </div>
+
+          {review.comment ? (
+            <blockquote className="mt-3 text-sm">
+              « {review.comment} »
+            </blockquote>
+          ) : null}
+
+          <figcaption className="mt-3 text-xs text-muted-foreground">
+            {review.user.name}
+            {" · "}
+            Achat vérifié
+          </figcaption>
+
+          {review.product.slug ? (
+            <Link
+              to="/produit/$slug"
+              params={{ slug: review.product.slug }}
+              className="mt-2 inline-block text-xs underline underline-offset-4 hover:text-primary"
+            >
+              {review.product.name ?? "Voir le produit"}
+            </Link>
+          ) : null}
+        </figure>
+      ))}
+    </div>
+  )}
+</Section>
 
       {/* 10. Sélection recommandée */}
       <Section eyebrow="Sélection" title="Nos incontournables">

@@ -44,7 +44,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/orders/{reference}', [OrderController::class, 'show']);
     Route::post('/contact', [ContactMessageController::class, 'store']);
     Route::post('/newsletter/subscribe', [NewsletterController::class,'subscribe']);
+    Route::get('/reviews/latest', [ReviewController::class, 'latest']);
     Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
+
 
     Route::get('/debug-outbound-ip', function () {
     $response = Http::post(
