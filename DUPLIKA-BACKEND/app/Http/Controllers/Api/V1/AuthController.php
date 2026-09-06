@@ -77,6 +77,32 @@ class AuthController extends Controller
             ]);
         }
 
+        if (
+    !$user ||
+    !Hash::check(
+        $validated['password'],
+        $user->password
+    )
+) {
+    throw ValidationException::withMessages([
+        'email' => [
+            'Les identifiants fournis sont incorrects.',
+        ],
+    ]);
+}
+
+if (! $user->is_active) {
+    // Supprime également les anciennes sessions API
+    // éventuellement encore actives.
+    $user->tokens()->delete();
+
+    throw ValidationException::withMessages([
+        'email' => [
+            'Votre compte a été désactivé. Veuillez contacter DUPLIKA.',
+        ],
+    ]);
+}
+
         $token = $user
             ->createToken('duplika-api')
             ->plainTextToken;

@@ -26,7 +26,7 @@ class OrderForm
                             ->label('Statut de la commande')
                             ->options([
                                 'en_attente_paiement' => 'Commande reçue',
-                                'payee' => 'Confirmée',
+                                'payee' => 'Payée',
                                 'en_preparation' => 'En préparation',
                                 'expediee' => 'Prête / Expédiée',
                                 'livree' => 'Terminée',

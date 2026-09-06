@@ -24,6 +24,7 @@ class User extends Authenticatable implements FilamentUser
     'email',
     'phone',
     'password',
+    'is_active',
 ];
 
     /**
@@ -38,12 +39,13 @@ class User extends Authenticatable implements FilamentUser
      * Les casts des attributs.
      */
     protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+    ];
+}
     public function canAccessPanel(Panel $panel): bool
 {
     return $this->hasAnyRole([

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -37,6 +38,19 @@ class UsersTable
                         }
                     ),
 
+                TextColumn::make('is_active')
+                    ->label('Statut')
+                    ->badge()
+                    ->formatStateUsing(
+                        fn (bool $state): string =>
+                            $state ? 'Actif' : 'Inactif'
+                    )
+                    ->color(
+                        fn (bool $state): string =>
+                            $state ? 'success' : 'danger'
+                    )
+                    ->sortable(),
+
                 TextColumn::make('created_at')
                     ->label("Date d'inscription")
                     ->dateTime('d/m/Y H:i')
@@ -50,6 +64,13 @@ class UsersTable
                         'roles',
                         'name'
                     ),
+
+                SelectFilter::make('is_active')
+                    ->label('Statut')
+                    ->options([
+                        1 => 'Actif',
+                        0 => 'Inactif',
+                    ]),
             ])
 
             ->defaultSort(
@@ -63,6 +84,48 @@ class UsersTable
 
                 EditAction::make()
                     ->label('Modifier'),
+
+                Action::make('deactivate')
+                    ->label('Désactiver')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Désactiver ce compte ?')
+                    ->modalDescription(
+                        'Le client ne pourra plus se connecter à DUPLIKA.'
+                    )
+                    ->visible(
+                        fn ($record): bool =>
+                            $record->hasRole('Client')
+                            && $record->is_active
+                    )
+                    ->action(function ($record): void {
+                        $record->update([
+                            'is_active' => false,
+                        ]);
+
+                        $record->tokens()->delete();
+                    }),
+
+                Action::make('activate')
+                    ->label('Activer')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Réactiver ce compte ?')
+                    ->modalDescription(
+                        'Le client pourra de nouveau se connecter à DUPLIKA.'
+                    )
+                    ->visible(
+                        fn ($record): bool =>
+                            $record->hasRole('Client')
+                            && ! $record->is_active
+                    )
+                    ->action(function ($record): void {
+                        $record->update([
+                            'is_active' => true,
+                        ]);
+                    }),
             ]);
     }
 }

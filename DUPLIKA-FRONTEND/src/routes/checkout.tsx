@@ -1,10 +1,9 @@
 import {
   createFileRoute,
   Link,
-  useNavigate,
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   MapPin,
   MessageCircle,
@@ -24,16 +23,9 @@ import {
 import {
   quoteCart,
   submitCheckout,
-  syncCinetPayPayment,
-  type CheckoutResult,
 } from "@/lib/api";
-import {
-  loadCinetPaySdk,
-  openCinetPayPopup,
-} from "@/lib/cinetpay";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -57,16 +49,11 @@ type PaymentMethod = "cinetpay";
 
 function CheckoutPage() {
   const cart = useCart();
-  const navigate = useNavigate();
-
   const [deliveryMode, setDeliveryMode] =
     useState<DeliveryMode>("pickup");
 
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("cinetpay");
-
-  const [pendingCheckout, setPendingCheckout] =
-    useState<CheckoutResult | null>(null);
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -88,12 +75,6 @@ function CheckoutPage() {
       cart.lines.length > 0,
   });
 
-  useEffect(() => {
-    void loadCinetPaySdk().catch(() => {
-      // Une erreur explicite sera affichée au clic si le CDN reste indisponible.
-    });
-  }, []);
-
   if (
     cart.hydrated &&
     cart.lines.length === 0
@@ -109,7 +90,7 @@ function CheckoutPage() {
           className="mt-6"
         >
           <Link to="/boutique">
-            Retour à la boutique
+            Retour Ã  la boutique
           </Link>
         </Button>
       </div>
@@ -131,126 +112,69 @@ function CheckoutPage() {
     setSubmitting(true);
 
     try {
-      const result =
-        pendingCheckout ??
-        (await submitCheckout({
-          customer: {
-            firstName: String(
-              form.get("firstName") ?? "",
-            ),
+      const result = await submitCheckout({
+        customer: {
+          firstName: String(
+            form.get("firstName") ?? "",
+          ),
 
-            lastName: String(
-              form.get("lastName") ?? "",
-            ),
+          lastName: String(
+            form.get("lastName") ?? "",
+          ),
 
-            email: String(
-              form.get("email") ?? "",
-            ),
+          email: String(
+            form.get("email") ?? "",
+          ),
 
-            phone: String(
-              form.get("phone") ?? "",
-            ),
-          },
+          phone: String(
+            form.get("phone") ?? "",
+          ),
+        },
 
-          address: {
-            line1:
-              deliveryMode ===
-              "delivery"
-                ? String(
-                    form.get(
-                      "addressLine1",
-                    ) ?? "",
-                  )
-                : "Retrait boutique DUPLIKA",
+        address: {
+          line1:
+            deliveryMode === "delivery"
+              ? String(
+                  form.get("addressLine1") ?? "",
+                )
+              : "Retrait boutique DUPLIKA",
 
-            line2:
-              deliveryMode ===
-              "delivery"
-                ? String(
-                    form.get(
-                      "addressLine2",
-                    ) ?? "",
-                  )
-                : "",
+          line2:
+            deliveryMode === "delivery"
+              ? String(
+                  form.get("addressLine2") ?? "",
+                )
+              : "",
 
-            city:
-              deliveryMode ===
-              "delivery"
-                ? String(
-                    form.get("city") ??
-                      "Lomé",
-                  )
-                : "Lomé",
+          city:
+            deliveryMode === "delivery"
+              ? String(
+                  form.get("city") ?? "Lomé",
+                )
+              : "Lomé",
 
-            zoneId:
-              deliveryMode,
+          zoneId: deliveryMode,
 
-            notes: String(
-              form.get("notes") ?? "",
-            ),
-          },
+          notes: String(
+            form.get("notes") ?? "",
+          ),
+        },
 
-          shippingMethodId:
-            deliveryMode,
+        shippingMethodId: deliveryMode,
+        paymentMethod,
+        lines: cart.lines,
 
-          paymentMethod,
+        // Le checkout est réservé aux clients authentifiés.
+        createAccount: false,
+      });
 
-          lines: cart.lines,
-
-          // Le checkout est désormais réservé
-          // aux clients authentifiés.
-          createAccount: false,
-        }));
-
-      setPendingCheckout(result);
-
-      const popupResult =
-        await openCinetPayPopup(result.cinetpay);
-
-      const popupStatus =
-        popupResult.status?.toUpperCase();
-
-      if (
-        popupStatus === "ACCEPTED" ||
-        popupStatus === "REFUSED"
-      ) {
-        const synchronized =
-          await syncCinetPayPayment(
-            result.reference,
-          );
-
-        if (
-          popupStatus === "ACCEPTED" &&
-          synchronized.status === "payee"
-        ) {
-          cart.clear();
-          setPendingCheckout(null);
-
-          navigate({
-            to: "/suivi",
-            search: {
-              ref: result.reference,
-            },
-          });
-
-          toast.success(
-            `Paiement confirmé pour la commande ${result.reference}.`,
-          );
-
-          return;
-        }
-
-        if (popupStatus === "REFUSED") {
-          setPendingCheckout(null);
-          setError(
-            "Le paiement a été refusé. Vous pouvez réessayer avec une nouvelle transaction.",
-          );
-          return;
-        }
+      if (result.paymentRedirectUrl) {
+        window.location.assign(result.paymentRedirectUrl);
+        return;
       }
 
       setError(
-        `Le paiement de la commande ${result.reference} n'est pas encore confirmé. Cliquez de nouveau pour rouvrir le guichet.`,
+        `La commande ${result.reference} a été créée, mais CinetPay n'a retourné aucune URL de paiement.`,
       );
     } catch (err) {
       setError(
@@ -369,7 +293,7 @@ function CheckoutPage() {
                 <Store className="size-6 text-primary" />
 
                 <span className="mt-4 font-semibold">
-                  Retrait à la boutique
+                  Retrait Ã  la boutique
                 </span>
 
                 <span className="mt-1 text-sm text-muted-foreground">
@@ -404,12 +328,12 @@ function CheckoutPage() {
                 <Truck className="size-6 text-primary" />
 
                 <span className="mt-4 font-semibold">
-                  Livraison à domicile
+                  Livraison Ã  domicile
                 </span>
 
                 <span className="mt-1 text-sm text-muted-foreground">
                   Faites livrer votre
-                  commande à l'adresse de
+                  commande Ã  l'adresse de
                   votre choix.
                 </span>
               </button>
@@ -430,7 +354,7 @@ function CheckoutPage() {
 
                 <div>
                   <h3 className="font-semibold">
-                    Retrait à la boutique
+                    Retrait Ã  la boutique
                     DUPLIKA
                   </h3>
 
@@ -469,11 +393,11 @@ function CheckoutPage() {
 
                 <div className="w-full">
                   <h3 className="font-semibold">
-                    Livraison à domicile
+                    Livraison Ã  domicile
                   </h3>
 
                   <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-                    Renseignez l'adresse à
+                    Renseignez l'adresse Ã 
                     laquelle vous souhaitez
                     recevoir votre commande.
                     Les éventuels frais de
@@ -651,7 +575,7 @@ function CheckoutPage() {
                 {deliveryMode ===
                 "pickup"
                   ? "Retrait boutique"
-                  : "Livraison à domicile"}
+                  : "Livraison Ã  domicile"}
               </dd>
             </div>
 
@@ -707,9 +631,7 @@ function CheckoutPage() {
           >
             {submitting
               ? "Ouverture du paiement…"
-              : pendingCheckout
-                ? "Reprendre le paiement"
-                : "Payer avec CinetPay"}
+              : "Payer avec CinetPay"}
           </Button>
 
           <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">

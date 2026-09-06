@@ -25,7 +25,7 @@ class OrderInfolist
                             ->formatStateUsing(
                                 fn (string $state): string => match ($state) {
                                     'en_attente_paiement' => 'Commande reçue',
-                                    'payee' => 'Confirmée',
+                                    'payee' => 'Payée',
                                     'en_preparation' => 'En préparation',
                                     'expediee' => 'Prête / Expédiée',
                                     'livree' => 'Terminée',
