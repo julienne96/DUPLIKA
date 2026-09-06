@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ContactMessageController;
 use App\Http\Controllers\Api\V1\NewsletterController;
+use App\Http\Controllers\Api\V1\ReviewController;
 
 
 
@@ -42,8 +43,8 @@ Route::prefix('v1')->group(function () {
     ->post('/checkout', [CheckoutController::class, 'store']);
     Route::get('/orders/{reference}', [OrderController::class, 'show']);
     Route::post('/contact', [ContactMessageController::class, 'store']);
-    Route::post('/newsletter/subscribe', [
-    NewsletterController::class,'subscribe']);
+    Route::post('/newsletter/subscribe', [NewsletterController::class,'subscribe']);
+    Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 
     Route::get('/debug-outbound-ip', function () {
     $response = Http::post(
@@ -79,10 +80,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('/me/addresses/{id}', [AddressController::class, 'destroy']);
         Route::get('/me/orders', [OrderController::class, 'myOrders']);
         Route::put('/me/profile', [AuthController::class, 'updateProfile']);
-        Route::post('/payments/cinetpay/{order:reference}/sync', [
-            CinetPayController::class,
-            'synchronize',
-        ]);
+        Route::post('/payments/cinetpay/{order:reference}/sync', [ CinetPayController::class,'synchronize', ]);
+        Route::post('/products/{product}/reviews', [ReviewController::class, 'store']);
 
     });
 
