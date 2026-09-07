@@ -140,7 +140,9 @@ function variants(
         sku: `${l.toUpperCase()}-${c.toUpperCase()}`,
         options: { "opt-longueur": l, "opt-bonnet": c },
         price: base + bump,
-        compareAtPrice: compareAt ? compareAt + bump : undefined,
+        ...(compareAt !== undefined
+  ? { compareAtPrice: compareAt + bump }
+  : {}),
         stock: stocks[i % stocks.length] ?? 0,
         lowStockThreshold: 3,
       });

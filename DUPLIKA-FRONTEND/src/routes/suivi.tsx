@@ -117,6 +117,17 @@ function SuiviPage() {
     data?.status === "annulee" ||
     data?.status === "remboursee";
 
+    const customer = data?.customer ?? {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+};
+
+const address = data?.address ?? {
+  zoneName: "",
+};
+
   return (
     <div className="container-duplika max-w-5xl py-12">
 
@@ -265,6 +276,17 @@ function SuiviPage() {
                     const active =
                       currentStep === index;
 
+                      const customer = data?.customer ?? {
+                           firstName: "",
+                           lastName: "",
+                            email: "",
+                            phone: "",
+                             };
+
+                    const address = data?.address ?? {
+                          zoneName: "",
+                          };
+
                     return (
                       <div
                         key={step.status}
@@ -347,17 +369,17 @@ function SuiviPage() {
 
               <div className="mt-5 space-y-2 text-sm">
                 <p className="font-medium">
-                  {data.customer.firstName}{" "}
-                  {data.customer.lastName}
+                  {customer.firstName}{" "}
+                  {customer.lastName}
                 </p>
 
                 <p className="text-muted-foreground">
-                  {data.customer.email}
+                  {customer.email}
                 </p>
 
-                {data.customer.phone ? (
+                {customer.phone ? (
                   <p className="text-muted-foreground">
-                    {data.customer.phone}
+                    {customer.phone}
                   </p>
                 ) : null}
               </div>
@@ -368,7 +390,7 @@ function SuiviPage() {
             <section className="border border-border bg-card p-6">
               <div className="flex items-center gap-3">
                 <div className="flex size-10 items-center justify-center bg-secondary">
-                  {data.address.zoneName
+                  {address.zoneName
                     ?.toLowerCase()
                     .includes("retrait") ? (
                     <Store className="size-5 text-primary" />
@@ -384,11 +406,11 @@ function SuiviPage() {
 
               <div className="mt-5 text-sm">
                 <p className="font-medium">
-                  {data.address.zoneName ??
+                  {address.zoneName ??
                     "Non renseigné"}
                 </p>
 
-                {data.address.zoneName
+                {address.zoneName
                   ?.toLowerCase()
                   .includes("retrait") ? (
                   <div className="mt-3 flex gap-2 text-muted-foreground">
@@ -477,7 +499,7 @@ function SuiviPage() {
                 </span>
 
                 <span className="text-right">
-                  {data.address.zoneName
+                  {address.zoneName
                     ?.toLowerCase()
                     .includes("retrait")
                     ? "Gratuit"

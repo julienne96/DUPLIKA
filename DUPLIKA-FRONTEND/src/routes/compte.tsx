@@ -388,15 +388,24 @@ function AddressesPanel() {
 
             return;
           }
+create.mutate({
+  label: parsed.data.label,
+  phone: parsed.data.phone,
+  line1: parsed.data.line1,
+  city: parsed.data.city,
 
-          create.mutate({
-            ...parsed.data,
+  ...(parsed.data.line2 !== undefined
+    ? { line2: parsed.data.line2 }
+    : {}),
 
-            // La première adresse devient
-            // automatiquement l'adresse par défaut.
-            isDefault:
-              (addresses ?? []).length === 0,
-          });
+  ...(parsed.data.notes !== undefined
+    ? { notes: parsed.data.notes }
+    : {}),
+
+  // La première adresse devient
+  // automatiquement l'adresse par défaut.
+  isDefault: (addresses ?? []).length === 0,
+});
         }}
         noValidate
       >

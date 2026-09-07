@@ -122,7 +122,7 @@ function SmartMatchPage() {
               <Label>Type de perruque</Label>
 
               <Select
-                value={form.wig_type}
+               value={form.wig_type ?? ""}
                 onValueChange={(value) =>
                   updateField("wig_type", value)
                 }
@@ -149,7 +149,7 @@ function SmartMatchPage() {
               <Label>Texture</Label>
 
               <Select
-                value={form.texture}
+                value={form.texture ?? ""}
                 onValueChange={(value) =>
                   updateField("texture", value)
                 }
@@ -172,7 +172,7 @@ function SmartMatchPage() {
               <Label>Couleur</Label>
 
               <Select
-                value={form.color}
+                value={form.color ?? ""}
                 onValueChange={(value) =>
                   updateField("color", value)
                 }
@@ -197,7 +197,7 @@ function SmartMatchPage() {
               <Label>Longueur</Label>
 
               <Select
-                value={form.length}
+                value={form.length ?? ""}
                 onValueChange={(value) =>
                   updateField("length", value)
                 }
@@ -220,7 +220,7 @@ function SmartMatchPage() {
               <Label>Style recherché</Label>
 
               <Select
-                value={form.style}
+               value={form.style ?? ""}
                 onValueChange={(value) =>
                   updateField("style", value)
                 }
@@ -244,7 +244,7 @@ function SmartMatchPage() {
               <Label>Occasion</Label>
 
               <Select
-                value={form.occasion}
+                value={form.occasion ?? ""}
                 onValueChange={(value) =>
                   updateField("occasion", value)
                 }
@@ -369,9 +369,9 @@ function SmartMatchPage() {
                     <div className="overflow-hidden bg-secondary">
                     <img
                     src={getProductImage(
-  product.slug,
-  product.image,
-)}
+                    product.slug,
+                    product.image,
+                     )}
                        alt={product.name}
                       className="aspect-[4/5] w-full object-cover"
                     loading="lazy" />

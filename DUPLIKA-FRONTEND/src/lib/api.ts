@@ -87,14 +87,16 @@ function normalizeProduct(raw: any): Product {
       : undefined;
 
   const variant: Variant = {
-    id: String(raw.id),
-    sku: raw.sku ?? String(raw.id),
-    options: {},
-    price,
-    compareAtPrice,
-    stock: Number(raw.stock ?? 0),
-    lowStockThreshold: Number(raw.low_stock_threshold ?? 3),
-  };
+  id: String(raw.id),
+  sku: raw.sku ?? String(raw.id),
+  options: {},
+  price,
+  ...(compareAtPrice !== undefined
+    ? { compareAtPrice }
+    : {}),
+  stock: Number(raw.stock ?? 0),
+  lowStockThreshold: Number(raw.low_stock_threshold ?? 3),
+};
 
   return {
     id: String(raw.id),
@@ -122,13 +124,15 @@ function normalizeProduct(raw: any): Product {
     attributes: {},
     relatedSlugs: [],
     addOnSlugs: [],
-    rating:
-      raw.rating_average != null
-        ? {
-            average: Number(raw.rating_average),
-            count: Number(raw.rating_count ?? 0),
-          }
-        : undefined,
+   
+    ...(raw.rating_average != null
+  ? {
+      rating: {
+        average: Number(raw.rating_average),
+        count: Number(raw.rating_count ?? 0),
+      },
+    }
+  : {}),
     isNew: Boolean(raw.is_new),
     publishedAt: raw.published_at ?? raw.created_at ?? "",
   };
@@ -517,7 +521,9 @@ function localQuote(
         variantLabel: variantLabel(product, variant),
         image: product.media[0]?.url ?? "",
         unitPrice: variant.price,
-        compareAtPrice: variant.compareAtPrice,
+       ...(variant.compareAtPrice !== undefined
+  ? { compareAtPrice: variant.compareAtPrice }
+  : {}),
         quantity,
         lineTotal: variant.price * quantity,
         availableStock: variant.stock,
