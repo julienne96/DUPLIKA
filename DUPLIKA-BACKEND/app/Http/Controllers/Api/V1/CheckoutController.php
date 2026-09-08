@@ -268,14 +268,17 @@ class CheckoutController extends Controller
                         $item['line_total'],
                 ]);
 
-                /*
-                 * IMPORTANT :
-                 * le stock n'est pas diminué ici.
-                 *
-                 * Il sera diminué uniquement
-                 * après confirmation du paiement
-                 * T-Money ou Flooz.
-                 */
+               /*
+ * Réservation immédiate du stock.
+ *
+ * Le produit a déjà été verrouillé avec
+ * lockForUpdate() et sa disponibilité
+ * a été vérifiée plus haut.
+ */
+$product->decrement(
+    'stock',
+    (int) $item['quantity']
+);
             }
 
             return $order;
@@ -284,12 +287,55 @@ class CheckoutController extends Controller
        try {
     $payment = $cinetPay->initializePayment($order);
 } catch (\Throwable $exception) {
+
     report($exception);
 
+    /*
+     * L'initialisation CinetPay a échoué :
+     * on annule la commande et on libère
+     * immédiatement le stock réservé.
+     */
+    DB::transaction(function () use ($order) {
+
+        $lockedOrder = Order::query()
+            ->with('items')
+            ->lockForUpdate()
+            ->findOrFail($order->id);
+
+        if (
+            $lockedOrder->stock_decremented_at !== null
+            && $lockedOrder->stock_released_at === null
+        ) {
+            foreach ($lockedOrder->items as $item) {
+
+                $product = Product::query()
+                    ->lockForUpdate()
+                    ->find($item->product_id);
+
+                if ($product) {
+                    $product->increment(
+                        'stock',
+                        (int) $item->quantity
+                    );
+                }
+            }
+
+            $lockedOrder->stock_released_at = now();
+        }
+
+        $lockedOrder->status = 'annulee';
+        $lockedOrder->payment_status = 'FAILED';
+
+        $lockedOrder->save();
+    });
+
     return response()->json([
-        'message' => 'La commande a été créée, mais le paiement CinetPay n’a pas pu être initialisé.',
-        'reference' => $order->reference,
-        'error' => $exception->getMessage(),
+        'message' =>
+            'Le paiement n’a pas pu être initialisé. Aucun stock n’a été réservé.',
+        'reference' =>
+            $order->reference,
+        'error' =>
+            $exception->getMessage(),
     ], 502);
 }
 

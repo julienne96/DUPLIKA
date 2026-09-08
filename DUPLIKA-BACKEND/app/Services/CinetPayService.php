@@ -286,13 +286,28 @@ class CinetPayService
         }
 
         if (
-            ($data['status'] ?? null) !== 'OK' ||
-            empty($data['payment_url'])
-        ) {
-            throw new RuntimeException(
-                'CinetPay n\'a pas retourné de lien de paiement valide.'
-            );
-        }
+    ($data['status'] ?? null) !== 'OK' ||
+    empty($data['payment_url'])
+) {
+    Log::error('Réponse CinetPay invalide lors de l\'initialisation.', [
+        'http_status' => $response->status(),
+        'response' => $data,
+        'order_reference' => $order->reference,
+    ]);
+
+    throw new RuntimeException(
+        'CinetPay n\'a pas retourné de lien de paiement valide. '
+        . 'Statut reçu : '
+        . (string) ($data['status'] ?? 'ABSENT')
+        . ' - Message : '
+        . (string) (
+            $data['message']
+            ?? $data['description']
+            ?? $data['details']['message']
+            ?? 'Aucun message'
+        )
+    );
+}
 
         /*
          * Sauvegarde des informations CinetPay.
@@ -456,70 +471,7 @@ class CinetPayService
                         }
                     }
 
-                    /*
-                     * Le stock n'est décrémenté
-                     * qu'une seule fois.
-                     */
-                    if (
-                        $lockedOrder->stock_decremented_at
-                        === null
-                    ) {
-                        foreach (
-                            $lockedOrder->items as $item
-                        ) {
-                            $product = Product::query()
-                                ->lockForUpdate()
-                                ->find($item->product_id);
-
-                            if (! $product) {
-                                Log::warning(
-                                    'Produit introuvable pendant la mise à jour du stock CinetPay.',
-                                    [
-                                        'order_reference' =>
-                                            $lockedOrder->reference,
-
-                                        'product_id' =>
-                                            $item->product_id,
-                                    ]
-                                );
-
-                                continue;
-                            }
-
-                            if (
-                                $product->stock <
-                                $item->quantity
-                            ) {
-                                Log::critical(
-                                    'Stock insuffisant après paiement CinetPay.',
-                                    [
-                                        'order_reference' =>
-                                            $lockedOrder->reference,
-
-                                        'product_id' =>
-                                            $product->id,
-
-                                        'available_stock' =>
-                                            $product->stock,
-
-                                        'paid_quantity' =>
-                                            $item->quantity,
-                                    ]
-                                );
-                            }
-
-                            $product->update([
-                                'stock' => max(
-                                    0,
-                                    (int) $product->stock
-                                    - (int) $item->quantity
-                                ),
-                            ]);
-                        }
-
-                        $lockedOrder->stock_decremented_at =
-                            now();
-                    }
+                    
                 }
 
                 /*
@@ -547,22 +499,59 @@ class CinetPayService
                  * Paiement terminé sans succès.
                  */
                 elseif (
-                    in_array(
-                        $paymentStatus,
+    in_array(
+        $paymentStatus,
+        [
+            'FAILED',
+            'EXPIRED',
+        ],
+        true
+    )
+) {
+    if ($lockedOrder->status !== 'payee') {
+
+        $lockedOrder->status = 'annulee';
+
+        /*
+         * On restitue le stock réservé
+         * une seule fois.
+         */
+        if (
+            $lockedOrder->stock_decremented_at !== null
+            && $lockedOrder->stock_released_at === null
+        ) {
+            foreach ($lockedOrder->items as $item) {
+
+                $product = Product::query()
+                    ->lockForUpdate()
+                    ->find($item->product_id);
+
+                if (! $product) {
+                    Log::warning(
+                        'Produit introuvable pendant la restitution du stock.',
                         [
-                            'FAILED',
-                            'EXPIRED',
-                        ],
-                        true
-                    )
-                ) {
-                    if (
-                        $lockedOrder->status !== 'payee'
-                    ) {
-                        $lockedOrder->status =
-                            'annulee';
-                    }
+                            'order_reference' =>
+                                $lockedOrder->reference,
+
+                            'product_id' =>
+                                $item->product_id,
+                        ]
+                    );
+
+                    continue;
                 }
+
+                $product->increment(
+                    'stock',
+                    (int) $item->quantity
+                );
+            }
+
+            $lockedOrder->stock_released_at =
+                now();
+        }
+    }
+}
 
                 $lockedOrder->save();
 
