@@ -60,8 +60,12 @@ class CinetPayService
     {
         $this->assertConfigured();
 
-        return Cache::remember(
-            'cinetpay_access_token',
+       $cacheKey =
+    'cinetpay_access_token_' .
+    sha1($this->baseUrl . '|' . $this->apiKey);
+
+return Cache::remember(
+    $cacheKey,
             now()->addHours(23),
             function (): string {
 
@@ -105,10 +109,14 @@ class CinetPayService
         );
     }
 
-    public function forgetAccessToken(): void
-    {
-        Cache::forget('cinetpay_access_token');
-    }
+   public function forgetAccessToken(): void
+{
+    $cacheKey =
+        'cinetpay_access_token_' .
+        sha1($this->baseUrl . '|' . $this->apiKey);
+
+    Cache::forget($cacheKey);
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -200,7 +208,7 @@ class CinetPayService
             );
         }
 
-        $payload = [
+       $payload = [
     'currency' => 'XOF',
 
     'merchant_transaction_id' =>
@@ -216,18 +224,12 @@ class CinetPayService
     'client_email' =>
         $order->email,
 
-    'client_phone_number' =>
-        $this->normalizeTogoPhone($order->phone),
-
     'client_first_name' =>
         $order->first_name,
 
     'client_last_name' =>
         $order->last_name,
 
-    /*
-     * Paiement web avec redirection.
-     */
     'channel' => 'PUSH',
 
     'direct_pay' => false,
