@@ -281,6 +281,13 @@ $product->decrement(
 );
             }
 
+         /*
+ * Le stock de tous les articles de la commande
+ * est maintenant réservé.
+ */
+$order->stock_decremented_at = now();
+$order->save();
+
             return $order;
         });
 
