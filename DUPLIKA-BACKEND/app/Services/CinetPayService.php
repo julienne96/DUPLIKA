@@ -201,46 +201,51 @@ class CinetPayService
         }
 
         $payload = [
-            'currency' => 'XOF',
+    'currency' => 'XOF',
 
-            'merchant_transaction_id' =>
-                $order->payment_transaction_id,
+    'merchant_transaction_id' =>
+        $order->payment_transaction_id,
 
-            'amount' => (int) $order->total,
+    'amount' => (int) $order->total,
 
-            'lang' => 'fr',
+    'lang' => 'fr',
 
-            'designation' =>
-                'Commande DUPLIKA ' . $order->reference,
+    'designation' =>
+        'Commande DUPLIKA ' . $order->reference,
 
-            'client_email' =>
-                $order->email,
+    'client_email' =>
+        $order->email,
 
-            'client_phone_number' =>
-                $this->normalizeTogoPhone($order->phone),
+    'client_phone_number' =>
+        $this->normalizeTogoPhone($order->phone),
 
-            'client_first_name' =>
-                $order->first_name,
+    'client_first_name' =>
+        $order->first_name,
 
-            'client_last_name' =>
-                $order->last_name,
+    'client_last_name' =>
+        $order->last_name,
 
-            'direct_pay' => false,
+    /*
+     * Paiement web avec redirection.
+     */
+    'channel' => 'PUSH',
 
-            'success_url' =>
-                $frontendUrl
-                . '/suivi?reference='
-                . urlencode($order->reference),
+    'direct_pay' => false,
 
-            'failed_url' =>
-                $frontendUrl
-                . '/suivi?reference='
-                . urlencode($order->reference),
+    'success_url' =>
+        $frontendUrl
+        . '/suivi?reference='
+        . urlencode($order->reference),
 
-            'notify_url' =>
-                $backendUrl
-                . '/api/v1/payments/cinetpay/notify',
-        ];
+    'failed_url' =>
+        $frontendUrl
+        . '/suivi?reference='
+        . urlencode($order->reference),
+
+    'notify_url' =>
+        $backendUrl
+        . '/api/v1/payments/cinetpay/notify',
+];
 
         $method = $this->paymentMethod(
             $order->payment_method
