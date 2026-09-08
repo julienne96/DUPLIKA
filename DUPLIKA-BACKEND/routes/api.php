@@ -47,25 +47,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/reviews/latest', [ReviewController::class, 'latest']);
     Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 
-    Route::get('/debug/egress', function () {
-    $url = env('WEBHOOK_TEST_URL');
-
-    if (! $url) {
-        return response()->json([
-            'message' => 'WEBHOOK_TEST_URL manquant.',
-        ], 500);
-    }
-
-    $response = Http::timeout(15)->post($url, [
-        'service' => 'DUPLIKA-EU',
-        'region' => 'Frankfurt',
-        'timestamp' => now()->toIso8601String(),
-    ]);
-
-    return response()->json([
-        'sent' => $response->successful(),
-    ]);
-});
+    
     Route::get('/debug-outbound-ip', function () {
     $response = Http::post(
         env('WEBHOOK_TEST_URL'),
