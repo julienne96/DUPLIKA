@@ -47,11 +47,13 @@ class OrderController extends Controller
                                         $item->variant_label ?? '',
 
                                     'image' =>
-                                        $item->image
-                                            ? $baseUrl
-                                                . '/storage/'
-                                                . ltrim($item->image, '/')
-                                            : '',
+                                        str_starts_with($item->image ?? '', 'http')
+                                            ? $item->image
+                                            : ($item->image
+                                             ? $baseUrl
+                                             . '/storage/'
+                                             . ltrim($item->image, '/')
+                                              : ''),
 
                                     'unitPrice' =>
                                         (int) $item->unit_price,
@@ -261,12 +263,13 @@ class OrderController extends Controller
                                         $item->variant_label ?? '',
 
                                     'image' =>
-                                        $item->image
+                                           str_starts_with($item->image ?? '', 'http')
+                                           ? $item->image
+                                            : ($item->image
                                             ? $baseUrl
-                                                . '/storage/'
-                                                . ltrim($item->image, '/')
-                                            : '',
-
+                                             . '/storage/'
+                                             . ltrim($item->image, '/')
+                                            : ''),
                                     'unitPrice' =>
                                         (int) $item->unit_price,
 

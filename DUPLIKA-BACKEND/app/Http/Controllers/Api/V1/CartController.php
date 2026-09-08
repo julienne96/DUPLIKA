@@ -78,11 +78,13 @@ class CartController extends Controller
                  * URL publique complète de l'image.
                  */
                 'image' =>
-                    $product->image
-                        ? $request->getSchemeAndHttpHost()
-                            . '/storage/'
-                            . ltrim($product->image, '/')
-                        : '',
+    str_starts_with($product->image ?? '', 'http')
+        ? $product->image
+        : ($product->image
+            ? $request->getSchemeAndHttpHost()
+                . '/storage/'
+                . ltrim($product->image, '/')
+            : ''),
 
                 'unitPrice' =>
                     $unitPrice,
