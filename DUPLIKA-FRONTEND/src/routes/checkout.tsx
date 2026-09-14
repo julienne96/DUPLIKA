@@ -1,7 +1,9 @@
 import {
   createFileRoute,
   Link,
+  useNavigate,
 } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -26,6 +28,7 @@ import {
 } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -49,6 +52,8 @@ type PaymentMethod = "cinetpay";
 
 function CheckoutPage() {
   const cart = useCart();
+    const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [deliveryMode, setDeliveryMode] =
     useState<DeliveryMode>("pickup");
 
@@ -98,95 +103,125 @@ function CheckoutPage() {
   }
 
   const onSubmit = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
+  event: React.FormEvent<HTMLFormElement>,
+) => {
+  event.preventDefault();
 
-    setError(null);
-
-    const form =
-      new FormData(
-        event.currentTarget,
+      if (!isLoading && !isAuthenticated) {
+      window.sessionStorage.setItem(
+        "duplika.checkout.return",
+        "/checkout",
       );
 
-    setSubmitting(true);
-
-    try {
-      const result = await submitCheckout({
-        customer: {
-          firstName: String(
-            form.get("firstName") ?? "",
-          ),
-
-          lastName: String(
-            form.get("lastName") ?? "",
-          ),
-
-          email: String(
-            form.get("email") ?? "",
-          ),
-
-          phone: String(
-            form.get("phone") ?? "",
-          ),
-        },
-
-        address: {
-          line1:
-            deliveryMode === "delivery"
-              ? String(
-                  form.get("addressLine1") ?? "",
-                )
-              : "Retrait boutique DUPLIKA",
-
-          line2:
-            deliveryMode === "delivery"
-              ? String(
-                  form.get("addressLine2") ?? "",
-                )
-              : "",
-
-          city:
-            deliveryMode === "delivery"
-              ? String(
-                  form.get("city") ?? "Lomé",
-                )
-              : "Lomé",
-
-          zoneId: deliveryMode,
-
-          notes: String(
-            form.get("notes") ?? "",
-          ),
-        },
-
-        shippingMethodId: deliveryMode,
-        paymentMethod,
-        lines: cart.lines,
-
-        // Le checkout est réservé aux clients authentifiés.
-        createAccount: false,
+      navigate({
+        to: "/connexion",
+        replace: true,
       });
 
-      if (result.paymentRedirectUrl) {
-        window.location.assign(result.paymentRedirectUrl);
-        return;
-      }
-
-      setError(
-        `La commande ${result.reference} a été créée, mais CinetPay n'a retourné aucune URL de paiement.`,
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "La commande n'a pas pu être validée.",
-      );
-    } finally {
-      setSubmitting(false);
+      return;
     }
-  };
 
+  setError(null);
+
+  const form = new FormData(event.currentTarget);
+
+  setSubmitting(true);
+
+  try {
+    const result = await submitCheckout({
+      customer: {
+        firstName: String(
+          form.get("firstName") ?? "",
+        ),
+
+        lastName: String(
+          form.get("lastName") ?? "",
+        ),
+
+        email: String(
+          form.get("email") ?? "",
+        ),
+
+        phone: String(
+          form.get("phone") ?? "",
+        ),
+      },
+
+      address: {
+        line1:
+          deliveryMode === "delivery"
+            ? String(
+                form.get("addressLine1") ?? "",
+              )
+            : "Retrait boutique DUPLIKA",
+
+        line2:
+          deliveryMode === "delivery"
+            ? String(
+                form.get("addressLine2") ?? "",
+              )
+            : "",
+
+        city:
+          deliveryMode === "delivery"
+            ? String(
+                form.get("city") ?? "Lomé",
+              )
+            : "Lomé",
+
+        zoneId: deliveryMode,
+
+        notes: String(
+          form.get("notes") ?? "",
+        ),
+      },
+
+      shippingMethodId: deliveryMode,
+      paymentMethod,
+      lines: cart.lines,
+
+      // Le checkout est réservé aux clients authentifiés.
+      createAccount: false,
+    });
+
+    if (result.paymentRedirectUrl) {
+      window.location.assign(
+        result.paymentRedirectUrl,
+      );
+      return;
+    }
+
+    setError(
+      `La commande ${result.reference} a été créée, mais CinetPay n'a retourné aucune URL de paiement.`,
+    );
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "La commande n'a pas pu être validée.";
+
+    if (
+      message
+        .toLowerCase()
+        .includes("stock insuffisant") ||
+      message
+        .toLowerCase()
+        .includes("n'est plus disponible")
+    ) {
+      cart.clear();
+
+      toast.error(
+        "Ce produit n'est plus disponible. Votre panier a été vidé.",
+      );
+
+      return;
+    }
+
+    setError(message);
+  } finally {
+    setSubmitting(false);
+  }
+};
   return (
     <div className="container-duplika py-10">
       {/* EN-TÊTE */}

@@ -9,6 +9,7 @@ import type { CartLine } from "./types";
  */
 
 const STORAGE_KEY = "duplika.cart.v1";
+const CART_CLEAR_EVENT = "duplika:cart-clear";
 
 interface CartContextValue {
   lines: CartLine[];
@@ -40,6 +41,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
+  useEffect(() => {
+  const handleClearCart = () => {
+    setLines([]);
+    setIsOpen(false);
+
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Rien à faire
+    }
+  };
+
+  window.addEventListener(
+    CART_CLEAR_EVENT,
+    handleClearCart,
+  );
+
+  return () => {
+    window.removeEventListener(
+      CART_CLEAR_EVENT,
+      handleClearCart,
+    );
+  };
+}, []);
   useEffect(() => {
     if (!hydrated) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));

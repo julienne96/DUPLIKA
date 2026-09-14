@@ -24,13 +24,21 @@ export const Route = createFileRoute("/inscription")({
   component: InscriptionPage,
 });
 
-const schema = z.object({
-  firstName: z.string().trim().min(1, { message: "Prénom requis." }).max(80),
-  lastName: z.string().trim().min(1, { message: "Nom requis." }).max(80),
-  email: z.string().trim().email({ message: "Adresse e-mail invalide." }).max(255),
-  phone: z.string().trim().min(8, { message: "Numéro de téléphone invalide." }).max(32),
-  password: z.string().min(8, { message: "8 caractères minimum." }).max(72),
-});
+const schema = z
+  .object({
+    firstName: z.string().trim().min(1, { message: "Prénom requis." }).max(80),
+    lastName: z.string().trim().min(1, { message: "Nom requis." }).max(80),
+    email: z.string().trim().email({ message: "Adresse e-mail invalide." }).max(255),
+    phone: z.string().trim().min(8, { message: "Numéro de téléphone invalide." }).max(32),
+    password: z.string().min(8, { message: "8 caractères minimum." }).max(72),
+    passwordConfirmation: z.string().min(1, {
+      message: "Veuillez confirmer votre mot de passe.",
+    }),
+  })
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Les mots de passe ne correspondent pas.",
+    path: ["passwordConfirmation"],
+  });
 
 function InscriptionPage() {
   const { register } = useAuth();
@@ -38,12 +46,13 @@ function InscriptionPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  password: "",
+  passwordConfirmation: "",
+});
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -99,6 +108,20 @@ function InscriptionPage() {
           <Input id="password" type="password" value={form.password} onChange={set("password")} className="mt-1.5" autoComplete="new-password" required />
           <p className="mt-1 text-xs text-muted-foreground">8 caractères minimum.</p>
         </div>
+        <div>
+  <Label htmlFor="passwordConfirmation">
+    Confirmer le mot de passe
+  </Label>
+  <Input
+    id="passwordConfirmation"
+    type="password"
+    value={form.passwordConfirmation}
+    onChange={set("passwordConfirmation")}
+    className="mt-1.5"
+    autoComplete="new-password"
+    required
+  />
+</div>
 
         {error ? (
           <Alert variant="destructive">

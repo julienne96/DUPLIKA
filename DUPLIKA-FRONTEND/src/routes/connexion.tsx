@@ -30,6 +30,23 @@ const schema = z.object({
   password: z.string().min(8, { message: "8 caractères minimum." }).max(72),
 });
 
+const CHECKOUT_RETURN_KEY = "duplika.checkout.return";
+
+function getPostAuthPath() {
+  if (typeof window === "undefined") {
+    return "/compte";
+  }
+
+  const returnPath = window.sessionStorage.getItem(CHECKOUT_RETURN_KEY);
+
+  if (returnPath === "/checkout") {
+    window.sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+    return "/checkout";
+  }
+
+  return "/compte";
+}
+
 function ConnexionPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -41,16 +58,24 @@ function ConnexionPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
     const parsed = schema.safeParse({ email, password });
+
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Formulaire invalide.");
       return;
     }
+
     setPending(true);
+
     try {
       await login(parsed.data);
+
       toast.success("Bienvenue !");
-      navigate({ to: "/compte" });
+
+      const destination = getPostAuthPath();
+
+      navigate({ to: destination });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible.");
     } finally {
@@ -61,6 +86,7 @@ function ConnexionPage() {
   return (
     <div className="container-duplika max-w-md py-14">
       <h1 className="text-4xl sm:text-5xl">Connexion</h1>
+
       <p className="mt-2 text-sm text-muted-foreground">
         Retrouvez vos commandes, vos adresses et vos préférences.
       </p>
@@ -87,6 +113,7 @@ function ConnexionPage() {
             required
           />
         </div>
+
         <div>
           <Label htmlFor="password">Mot de passe</Label>
           <Input
@@ -117,19 +144,26 @@ function ConnexionPage() {
           className="text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
           onClick={async () => {
             const parsed = z.string().email().safeParse(email.trim());
+
             if (!parsed.success) {
               setError("Saisissez votre e-mail pour recevoir un lien de réinitialisation.");
               return;
             }
+
             await requestPasswordReset(parsed.data);
+
             toast.success("Si un compte existe, un e-mail vient d'être envoyé.");
           }}
         >
           Mot de passe oublié ?
         </button>
+
         <p className="text-muted-foreground">
           Pas encore de compte ?{" "}
-          <Link to="/inscription" className="text-primary underline-offset-4 hover:underline">
+          <Link
+            to="/inscription"
+            className="text-primary underline-offset-4 hover:underline"
+          >
             Créer un compte
           </Link>
         </p>

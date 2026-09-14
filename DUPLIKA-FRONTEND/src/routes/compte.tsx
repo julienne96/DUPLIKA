@@ -70,9 +70,10 @@ function ComptePage() {
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="text-4xl sm:text-5xl">Mon compte</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Bonjour {user.firstName}, ravie de vous revoir.
-          </p>
+
+<p className="mt-2 text-sm text-muted-foreground">
+  Bonjour {user.firstName}, ravie de vous revoir.
+</p>
         </div>
         <Button
           variant="outline"

@@ -19,7 +19,7 @@ export function SiteFooter() {
             dans la durée.
           </p>
           <div className="flex gap-2 pt-1">
-            <a href="https://instagram.com" aria-label="Instagram" className="rounded-md p-2 hover:bg-accent">
+            <a href="https://www.instagram.com/dupli_ka_?igsh=MXJ4Mm5lZWd2OGdodw==" aria-label="Instagram" className="rounded-md p-2 hover:bg-accent">
               <Instagram className="size-4" />
             </a>
             <a href="https://facebook.com" aria-label="Facebook" className="rounded-md p-2 hover:bg-accent">

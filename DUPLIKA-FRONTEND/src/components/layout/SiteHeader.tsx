@@ -11,6 +11,7 @@ import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
+
 export function PromoBar() {
   // Contenu administrable depuis le back-office (bloc « barre promotionnelle »).
   return (
@@ -176,10 +177,17 @@ export function SiteHeader() {
           </SheetContent>
         </Sheet>
 
-        <Link to="/" className="font-display text-2xl tracking-[0.28em] lg:text-[1.6rem]">
-          DUPLIKA
-        </Link>
-
+       <Link
+  to="/"
+  className="flex items-center gap-2 font-display text-2xl tracking-[0.28em] lg:text-[1.6rem]"
+>
+  <img
+    src="/favicon.png"
+    alt=""
+    className="h-10 w-auto object-contain"
+  />
+  <span>DUPLIKA</span>
+</Link>
         <nav aria-label="Navigation principale" className="ml-8 hidden items-center gap-6 lg:flex">
           <Link to="/boutique" className={navLink}>
             Boutique

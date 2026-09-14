@@ -1,0 +1,10 @@
+Options -Indexes
+DirectoryIndex _shell.html
+
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^ _shell.html [L]

@@ -52,8 +52,16 @@ function removeAuthToken(): void {
 
 interface LaravelUser {
   id: number | string;
-  name: string;
+  name?: string | null;
+
+  firstName?: string | null;
+  lastName?: string | null;
+
+  first_name?: string | null;
+  last_name?: string | null;
+
   email: string;
+  phone?: string | null;
 }
 
 interface LaravelAuthResponse {
@@ -68,14 +76,35 @@ interface LaravelUserResponse {
 }
 
 function normalizeAccountUser(user: LaravelUser): AccountUser {
-  const parts = (user.name ?? "").trim().split(/\s+/);
+  const fullName = (user.name ?? "").trim();
+
+  const parts = fullName
+    ? fullName.split(/\s+/)
+    : [];
+
+  const firstName =
+    (
+      user.firstName ??
+      user.first_name ??
+      parts[0] ??
+      ""
+    ).trim();
+
+  const lastName =
+    (
+      user.lastName ??
+      user.last_name ??
+      (parts.length > 1
+        ? parts.slice(1).join(" ")
+        : "")
+    ).trim();
 
   return {
     id: String(user.id),
-    firstName: parts.shift() ?? "",
-    lastName: parts.join(" "),
+    firstName,
+    lastName,
     email: user.email,
-    phone: "",
+    phone: user.phone ?? "",
   };
 }
 
@@ -722,9 +751,34 @@ export async function login(
       }),
     });
 
-  saveAuthToken(response.token);
+  const authenticatedUser =
+  normalizeAccountUser(response.user);
 
-  return normalizeAccountUser(response.user);
+if (typeof window !== "undefined") {
+  const previousUserId =
+    window.localStorage.getItem(
+      "duplika.last.user.id",
+    );
+
+  if (previousUserId !== authenticatedUser.id) {
+    window.localStorage.removeItem(
+      "duplika.cart.v1",
+    );
+
+    window.dispatchEvent(
+      new Event("duplika:cart-clear"),
+    );
+  }
+
+  window.localStorage.setItem(
+    "duplika.last.user.id",
+    authenticatedUser.id,
+  );
+}
+
+saveAuthToken(response.token);
+
+return authenticatedUser;
 }
 export async function register(
   payload: RegisterPayload,
@@ -752,7 +806,7 @@ export async function register(
         name: `${payload.firstName} ${payload.lastName}`.trim(),
         email: payload.email,
         password: payload.password,
-        password_confirmation: payload.password,
+        password_confirmation: payload.passwordConfirmation,
       }),
     });
 

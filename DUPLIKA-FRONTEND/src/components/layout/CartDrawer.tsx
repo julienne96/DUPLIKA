@@ -25,6 +25,7 @@ import {
 import { useCart } from "@/lib/cart";
 import { quoteCart } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
+import { useEffect } from "react";
 
 
 
@@ -42,6 +43,25 @@ export function CartDrawer() {
       cart.hydrated &&
       cart.lines.length > 0,
   });
+
+  useEffect(() => {
+  if (!data?.lines) return;
+
+  const unavailableLines = data.lines.filter(
+    (line) => line.availableStock <= 0,
+  );
+
+  if (unavailableLines.length === 0) {
+    return;
+  }
+
+  unavailableLines.forEach((line) => {
+    cart.removeLine(
+      line.variantId,
+      line.productSlug,
+    );
+  });
+}, [data?.lines, cart.removeLine]);
 
   return (
     <Sheet
