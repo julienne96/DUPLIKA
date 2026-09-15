@@ -40,6 +40,23 @@ const schema = z
     path: ["passwordConfirmation"],
   });
 
+  const CHECKOUT_RETURN_KEY = "duplika.checkout.return";
+
+function getPostAuthPath() {
+  if (typeof window === "undefined") {
+    return "/compte";
+  }
+
+  const returnPath = window.sessionStorage.getItem(CHECKOUT_RETURN_KEY);
+
+  if (returnPath === "/checkout") {
+    window.sessionStorage.removeItem(CHECKOUT_RETURN_KEY);
+    return "/checkout";
+  }
+
+  return "/compte";
+}
+
 function InscriptionPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -69,7 +86,9 @@ function InscriptionPage() {
     try {
       await register(parsed.data);
       toast.success("Compte créé, bienvenue chez DUPLIKA.");
-      navigate({ to: "/compte" });
+     const destination = getPostAuthPath();
+
+navigate({ to: destination });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Inscription impossible.");
     } finally {

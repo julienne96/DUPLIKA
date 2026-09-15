@@ -651,6 +651,7 @@ export interface RegisterPayload extends Credentials {
   firstName: string;
   lastName: string;
   phone: string;
+  passwordConfirmation: string;
 }
 
 const DEMO_AUTH_KEY = "duplika.demo.auth";
