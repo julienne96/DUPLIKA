@@ -12,7 +12,7 @@ class DashboardStats extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
-        $productsCount = Product::count();
+        $stockCount = Product::sum('stock');
 
         $ordersCount = Order::count();
 
@@ -24,10 +24,10 @@ class DashboardStats extends StatsOverviewWidget
             ->count();
 
         return [
-            Stat::make(__('admin.products'), $productsCount)
-                ->description(__('admin.products_registered'))
-                ->descriptionIcon('heroicon-m-shopping-bag')
-                ->color('primary'),
+           Stat::make(__('admin.total_stock'), $stockCount)
+               ->description(__('admin.total_stock_available'))
+               ->descriptionIcon('heroicon-m-shopping-bag')
+               ->color('primary'),
 
             Stat::make(__('admin.orders'), $ordersCount)
                 ->description(__('admin.orders_registered'))

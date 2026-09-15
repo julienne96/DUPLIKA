@@ -14,7 +14,8 @@ return [
     'newsletter' => 'Newsletter',
 
     // Dashboard
-    'products_registered' => 'Produits enregistrés',
+    'total_stock' => 'Stock total',
+    'total_stock_available' => 'Unités disponibles',
     'orders_registered' => 'Commandes enregistrées',
     'clients_registered' => 'Clients inscrits',
     'clients' => 'Clients',
